@@ -30,8 +30,6 @@ and If you also want to collaborate with the game, fork the project and send you
 ### Features
 With this initial release my main goal was to implement the basic funcitionality to reproduce (as much as possible) the original game mechanics and graphics.
 
-![Game Play](http://lvcabral.com/images/C64/retaliate64-beta-gameplay.gif)
-
 The main additions/changes to the code from the book were:
 
 - Added a splash screen for the game
