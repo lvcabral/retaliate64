@@ -1,7 +1,7 @@
 # Retaliate for the Commodore 64
 Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (available on Roku & Android)
 
-![Retaliate Splash](http://lvcabral.com/images/C64/retaliate-splash-v2-640x400-c64.png)
+![Retaliate Screens](http://lvcabral.com/images/C64/RetaliateScreens.png)
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong) to the Roku platform (streaming box/TV OS)
