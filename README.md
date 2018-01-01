@@ -6,7 +6,7 @@ Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (a
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong) to the Roku platform (streaming box/TV OS)
 I decided to work the other way around, this time creating a version of one of the most successful game for Roku, the arcade-style 
-space shooter game [Retaliate](https://channelstore.roku.com/details/53540/retaliate) to the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64).
+space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate) to the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64).
 
 ### Game Concept
 Originally created by [Romans I XVI](https://www.romansixvigaming.com/) Retaliate has a unique concept, unlike the classic shooters (Space Invaders, Galaxian, Galaga)
@@ -22,8 +22,8 @@ This changed when I came across the book called "[Retro Game Dev - C64 Edition](
 and some code to start with, along with the right tools to simplify the work (a development IDE and ready made libraries).
 
 The game code on this project is a learning exercise, that was implemented upon Derek's mini-shooter-game example from 
-the book (shared with no licensing restrictions). So be aware that this is my first attempt on creating a game 
-for the Commodore 64, and is still an ongoing project, this way, as I learn more, new features will be implemented.
+the book (shared with no licensing restrictions). So, be aware that this is my first attempt on creating a game 
+for the Commodore 64, and still is an ongoing project, this way, as I learn more, new features will be implemented.
 If you found bugs or have any suggestions please go on and report those at the [Issues Backlog](https://github.com/lvcabral/retaliate64/issues), 
 and If you also want to collaborate with the game, fork the project and send your pull requests!
 
