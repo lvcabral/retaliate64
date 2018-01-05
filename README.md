@@ -27,6 +27,8 @@ for the Commodore 64, and still is an ongoing project, this way, as I learn more
 If you found bugs or have any suggestions please go on and report those at the [Issues Backlog](https://github.com/lvcabral/retaliate64/issues), 
 and If you also want to collaborate with the game, fork the project and send your pull requests!
 
+![Retaliate Gameplay](http://lvcabral.com/images/C64/retaliate64-beta-gameplay-300px.gif)
+
 ### Features
 With this initial release my main goal was to implement the basic funcitionality to reproduce (as much as possible) the original game mechanics and graphics.
 
