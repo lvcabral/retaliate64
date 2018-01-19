@@ -6,7 +6,7 @@
 ;  Copyright (C) 2017 Dion Olsthoorn 
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Constants
@@ -248,7 +248,6 @@ defm    LIBSCREEN_DRAWTEXT_AAAV ; /1 = X Position 0-39 (Address)
         jmp @loop
 @done
 
-
         ldy /2 ; load y position as index into list
         
         lda ColorRAMRowStartLow,Y ; load low address byte
@@ -264,6 +263,57 @@ defm    LIBSCREEN_DRAWTEXT_AAAV ; /1 = X Position 0-39 (Address)
         cmp #0
         beq @done2
         lda #/4
+        sta (ZeroPageLow),Y
+        inx
+        iny
+        jmp @loop2
+@done2
+
+        endm
+
+;==============================================================================
+
+defm    LIBSCREEN_DRAWTEXT_AAAAV ; /1 = X Position 0-39 (Address)
+                                 ; /2 = Y Position 0-24 (Address)
+                                 ; /3 = 0 terminated string (Address)
+                                 ; /4 = string offset (Address)
+                                 ; /5 = Text Color (Value)
+
+        ldy /2 ; load y position as index into list
+
+        lda ScreenRAMRowStartLow,Y ; load low address byte
+        sta ZeroPageLow
+
+        lda ScreenRAMRowStartHigh,Y ; load high address byte
+        sta ZeroPageHigh
+
+        ldy /1 ; load x position into Y register
+
+        ldx /4
+@loop   lda /3,X
+        cmp #0
+        beq @continue
+        sta (ZeroPageLow),Y
+        inx
+        iny
+        jmp @loop
+@continue
+
+        ldy /2 ; load y position as index into list
+
+        lda ColorRAMRowStartLow,Y ; load low address byte
+        sta ZeroPageLow
+
+        lda ColorRAMRowStartHigh,Y ; load high address byte
+        sta ZeroPageHigh
+
+        ldy /1 ; load x position into Y register
+
+        ldx /4
+@loop2  lda /3,X
+        cmp #0
+        beq @done2
+        lda #/5
         sta (ZeroPageLow),Y
         inx
         iny

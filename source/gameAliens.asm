@@ -4,7 +4,7 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Constants
@@ -14,15 +14,14 @@ AliensFirePatternMax = 50
 AliensRespawnDelay = 255
 AliensYStart = 30
 AliensYDelay = 1
-AliensYSpeed = 3
 AliensYPriorityTop = 56
 AliensYPriorityBottom = 224
 AliensExplode = 12
 AlienRed = 5
 AlienShooter = 6
 AlienFirePos = 70
-WavesMax = 7
-WaveIndexMax = 37 ; last index + 1
+WavesMax = 10
+WaveIndexMax = 55 ; (WavesMax - 1) * 6 + 1
 
 ;===============================================================================
 ; Variables
@@ -32,7 +31,8 @@ aliensActive            byte   0
 aliensCount             byte   0
 aliensWaveIndex         byte   0
 aliensWaveTimeIndex     byte   0
-aliensWaveTimeArray     byte  25,  15,  25,   5,  25,  15, 25
+aliensWaveTimeArray     byte  25,  15,  25,   5,  25
+                        byte  15,  25,  15,  25,   5
 aliensWaveArray         byte   6,   5,   5,   5,   5,   6
                         byte   6,   6,   6,   6,   6,   6
                         byte   5,   5,   6,   6,   5,   5
@@ -40,6 +40,9 @@ aliensWaveArray         byte   6,   5,   5,   5,   5,   6
                         byte   6,   5,   5,   5,   5,   5
                         byte   6,   6,   6,   6,   6,   6
                         byte   6,   5,   5,   5,   5,   6
+                        byte   5,   6,   5,   6,   5,   6
+                        byte   5,   5,   5,   5,   5,   5
+                        byte   5,   5,   5,   5,   5,   5
 aliensFormationArray    byte 100,  50,  70,  70,  50, 200
                         byte 100, 100, 100, 100, 100, 100
                         byte  50, 100, 200, 150, 100,  50
@@ -47,6 +50,9 @@ aliensFormationArray    byte 100,  50,  70,  70,  50, 200
                         byte 200,  90,  80,  70,  60,  50
                         byte 100, 100, 100, 100, 100, 100
                         byte 200,  80, 100,  80, 100, 200
+                        byte  50,  50,  50,  50,  50,  50
+                        byte  50, 100, 150, 150, 100,  50
+                        byte 100, 100, 100, 100, 100, 100
 aliensFrameArray        byte   6,   5,   5,   5,   5,   6
 aliensFrame             byte   0
 aliensColor             byte   0
@@ -79,6 +85,8 @@ aliensPriority          byte   0
 aliensStep              byte   0
 aliensCollision         byte   0
 aliensScore             byte   0
+aliensSpeed             byte   3
+aliensSpeedArray        byte   3, 3, 6
 
 ;==============================================================================
 ; Macros/Subroutines
@@ -320,7 +328,8 @@ gAUPIShooters
         bcs gAUPISetPosition
        
 gAUPIIncMove
-        adc #aliensYSpeed
+        clc
+        adc aliensSpeed
         sta aliensY
         cmp #254
         bcs gAUPIMoveUp

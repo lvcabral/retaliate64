@@ -4,7 +4,7 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Macros/Subroutines
@@ -49,12 +49,16 @@ loopSplash
         lda $DC00
         and #$10  ;mask %00010000
         beq endSplash
-        ; Wait space bar
-        lda #$7F  ;%01111111 
-        sta $DC00 
-        lda $DC01 
-        and #$10  ;mask %00010000 
+        ; Wait space bar or return key
+        jsr SCNKEY
+        jsr GETIN
+        cmp #0
+        beq loopSplash
+        cmp #KEY_RETURN
         beq endSplash
+        cmp #KEY_SPACE
+        beq endSplash
+
         ; loop if nothing was pressed
         jmp loopSplash
 endSplash

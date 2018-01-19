@@ -4,7 +4,7 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; $00-$FF  PAGE ZERO (256 bytes)
@@ -22,6 +22,8 @@ ZeroPageParam6  = $78
 ZeroPageParam7  = $79
 ZeroPageParam8  = $7A
 ZeroPageParam9  = $7B
+ZeroPageTemp1   = $80
+ZeroPageTemp2   = $81
                 ; $90-$FA   Reserved for Kernal
 ZeroPageLow     = $FB
 ZeroPageHigh    = $FC
@@ -39,10 +41,10 @@ ZeroPageHigh2   = $FE
 ; $0801
 ; gameMain.asm is placed here by using the *=$0801 directive 
 
-* = $1000
+* = $0900
 MAPRAM
         ; Menu screens
-        ; Export List: 1-2(9),1-2(10),1-2(11),1-2(12),1-2(13),1-2(14),1-2(15),1-2(17),1-2(18),1-2(19),1-2(20),1-2(22),1-2(24)
+        ; Export List: 1-4(9),1-4(10),1-4(11),1-4(12),1-4(13),1-4(14),1-4(15),1-4(16),1-4(17),1-4(18),1-4(19),1-4(20),1-4(22),1-4(24)
         incbin screens.bin
 
 * = $2000
@@ -59,11 +61,14 @@ SPRITE0         = $87F8
 ;===============================================================================
 ; $A000-$BFFF  BASIC ROM (8K)
 
-; 192 decimal * 64(sprite size) = 12288(hex $3000)
-SPRITERAM       = 192
-* = $B000
+; 128 decimal * 64(sprite size) = 8192 (hex $2000) 
+; VIC II is looking at $8000 adding $2000 we have $A000
+SPRITERAM       = 128
+* = $A000
         incbin sprites.bin
-* = $B800
+; The character set ($D018) is pointing to 10 decimal (%xxxx101x)
+; So charmem is at $2800 plus bank start $8000 we have $A800
+* = $A800
         ; letters and numbers from the font "Teggst shower 5"
         ; http://kofler.dot.at/c64/download/teggst_shower_5.zip
         incbin characters.bin
@@ -121,6 +126,37 @@ SIGVOL          = $D418 ;(54296)
 COLORRAM        = $D800
 CIAPRA          = $DC00
 CIAPRB          = $DC01
+
+; Kernal Subroutines
+SCNKEY          = $FF9F
+GETIN           = $FFE4
+CLOSE           = $FFC3
+OPEN            = $FFC0
+SETNAM          = $FFBD
+SETLFS          = $FFBA
+CLRCHN          = $FFCC
+LOAD            = $FFD5
+SAVE            = $FFD8
+
+; PETSCII Key Codes
+KEY_RETURN      = $0D
+KEY_DEL         = $14
+KEY_CLR         = $93
+KEY_HOME        = $13
+KEY_INST        = $94
+KEY_SPACE       = $20
+KEY_F1          = $85
+KEY_F2          = $89
+KEY_F3          = $86
+KEY_F4          = $8A
+KEY_F5          = $87
+KEY_F6          = $8B
+KEY_F7          = $88
+KEY_F8          = $8C
+KEY_DOWN        = $11
+KEY_UP          = $91
+KEY_RIGHT       = $1D
+KEY_LEFT        = $9D
 
 ;===============================================================================
 ; $E000-$FFFF  KERNAL ROM (8K) 

@@ -2,9 +2,10 @@
 ;  libSound.asm - SID Sound related Macros
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
+;  Copyright (C) 2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Constants
@@ -98,7 +99,7 @@ CmdEnd                  = 8
 
 ;===============================================================================
 ; Variables
-
+soundEffectsDisabled    byte 0
 soundVoiceActive        byte 0, 0, 0
 soundVoiceCmdPtrHigh    byte 0, 0, 0
 soundVoiceCmdPtrLow     byte 0, 0, 0
@@ -228,6 +229,9 @@ defm LIBSOUND_PLAY_VAA  ; /1 = Voice                   (Value)
                         ; /2 = Command Buffer Ptr High (Address)
                         ; /3 = Command Buffer Ptr Low  (Address)
 
+        lda soundEffectsDisabled
+        bne @done
+
         ldx #/1
 
         lda /2
@@ -241,7 +245,7 @@ defm LIBSOUND_PLAY_VAA  ; /1 = Voice                   (Value)
 
         lda #0
         sta soundVoiceCmdIndex,X
-
+@done
         endm
 
 

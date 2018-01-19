@@ -1,7 +1,7 @@
 # Retaliate for the Commodore 64
 Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (available on Roku & Android)
 
-![Retaliate Screens](http://lvcabral.com/images/C64/RetaliateScreens.png)
+![Retaliate Screens](http://lvcabral.com/images/C64/RetaliateScreens02-900px.png)
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong) to the Roku platform (streaming box/TV OS)
@@ -27,38 +27,21 @@ for the Commodore 64, and still is an ongoing project, this way, as I learn more
 If you found bugs or have any suggestions please go on and report those at the [Issues Backlog](https://github.com/lvcabral/retaliate64/issues), 
 and If you also want to collaborate with the game, fork the project and send your pull requests!
 
-![Retaliate Gameplay](http://lvcabral.com/images/C64/retaliate64-beta-gameplay-300px.gif)
-
 ### Features
-With this initial release my main goal was to implement the basic funcitionality to reproduce (as much as possible) the original game mechanics and graphics.
+My main goal is to implement the basic functionality to reproduce (as much as possible) the original game mechanics and graphics.
+The current release (v0.2) introduces the new ship sprites (image below) and the Hangar Screen to select and save the ship model and colors.
 
-The main additions/changes to the code from the book were:
+![Player Ship Models](http://lvcabral.com/images/C64/retaliate-ships-comparison.png)
 
-- Added a splash screen for the game
-- Added the Retaliate logo (as sprites) on the Menu
-- Added a intro screen with game story/instructions
-- Added a credits screen
-- Changed sprites of the ships to reproduce Retaliate design
-- Changed aliens movement from swinging horizontally to moving down vertically
-- Implemented ship-to-ship collision logic
-- Limited the vertical movement of the player ship
-- Implemented the shield (activated with joystick down)
-- Implemented the shield energy gauge on the bottom line
-- Implemented limited bullets for player, and added an Ammo counter on screen
-- Implemented bullet collection feature (using the energy shield)
-- Reduced to a single life for the player
-- Changed score system to: 5 points killed by shield, 10 points killed by bullet
+Open the [Changelog](https://github.com/lvcabral/retaliate64/blob/master/CHANGELOG.md) to check all the currently implemented features.
 
 ### ToDo List
 The current planned improvements are listed below:
 
 - Multiplex sprites to have bigger alien waves
-- 3 Difficulty Levels (Easy, Normal, Hard)
-- Hangar Screen to select ship model and shield color
 - Add Gameplay Background Music (any SID expert to help?)
 - Improve sound effects
 - Multiple high scores table with names
-- Save high scores to disk
 
 ## How to Play the Game
 You can run the game on a real Commodore 64/128 or using an emulator, below the two methods:
@@ -87,8 +70,10 @@ You can run the game on a real Commodore 64/128 or using an emulator, below the 
 5.	Open project file retaliate.cbmprj
 6.	Press CTRL+F5 (build project and execute)
 
+![Retaliate Gameplay](http://lvcabral.com/images/C64/retaliate64-beta-gameplay-300px.gif)
+
 ## Resources Used
-These are the books, tools and websites that are helping me developing this project:
+These are the books, tools and websites that are helping me to develop this project:
 
 - [Retro Game Dev: Book by Derek Morris](https://www.retrogamedev.com/)
 - [Romans I XVI Gaming: Original game developer](https://www.romansixvigaming.com/)

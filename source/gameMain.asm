@@ -4,7 +4,7 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; BASIC Loader
@@ -19,6 +19,9 @@
 
 ;===============================================================================
 ; Initialize
+
+        ; Load game data from disk
+        jsr gameDataLoad
 
         ; Show Splash
         jsr startSplash
@@ -51,7 +54,7 @@
         LIBSPRITE_SETMULTICOLORS_VV LightBlue, White
         
         ; Set the memory location of the custom character set
-        LIBSCREEN_SETCHARMEMORY 14
+        LIBSCREEN_SETCHARMEMORY 10
 
         ; Initialize the library
         jsr libSoundInit
@@ -59,13 +62,11 @@
         ; Initialize the game
         jsr gamePlayerInit
         jsr gameFlowInit
-
-
 ;===============================================================================
 ; Update
 
 gMLoop
-        ; Wait for scanline 245 (starting early to fit aliens update on NTSC)
+        ; Wait for scanline 255
         LIBSCREEN_WAIT_V 255
 
         ; Start code timer change border color
@@ -89,3 +90,4 @@ gMLoop
         ; Loop back to the start of the game loop
         jmp gMLoop
 
+*=$4711 ;Move game code to load after the splash screen

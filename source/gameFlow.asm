@@ -4,12 +4,8 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
-;===============================================================================
-
-*=$4711 ;Move game code to load after the splash screen
-
 ;===============================================================================
 ; Constants
 
@@ -39,6 +35,7 @@ flowHiScoreY    byte 0
 hiscore1        byte 0
 hiscore2        byte 0
 hiscore3        byte 0
+statsHiScore    byte 0
 
 flowGaugeX      byte 1
 flowGaugeOneX   byte 2
@@ -53,6 +50,10 @@ flowAmmoX       byte 32
 flowAmmoNumX    byte 0
 flowAmmoY       byte 24
 bullets         byte 0
+bullets1        byte 0
+bullets2        byte 0
+aliens1         byte 0
+aliens2         byte 0
 
 flowScoreText   text 'score:'
                 byte 0
@@ -95,15 +96,15 @@ gameFlowInit
         LIBSCREEN_DRAWTEXT_AAAV flowHiScoreX, flowHiScoreY, flowHiScoreText, White
         jsr gameFlowHiScoreDisplay
 
+        rts
+
 ;===============================================================================
-
 gameFlowUpdateMenu
-
-        ; display the menu text
         lda menuDisplayed
         bne gFUMCheckFire
         jsr gameMenuShowLogo
         jsr gameMenuShowText
+        jsr gameMenuLevelDisplay
 
 gFUMCheckFire
         LIBINPUT_GETFIREPRESSED
@@ -111,30 +112,32 @@ gFUMCheckFire
 
         lda screenColumn
         cmp #MenuCredits
-        bne gFUMDecTimer
+        beq gFUMDecScreenTimer
+        cmp #MenuGameOver
+        beq gFUMDecScreenTimer
+        cmp #MenuHangar
+        beq gFUMHangarKeys
 
-        ; Wait F1 key
-        lda #$FE  ;%11111110
-        sta $DC00
-        lda $DC01
-        and #$10  ;mask %00010000
-        beq gFUMShowMenu
-        jmp gFUMEnd
-gFUMDecTimer
-        jsr gameFlowDecreaseTime
-        lda time2
-        bne gFUMEnd
-gFUMShowMenu
-        jsr gameMenuShowText
-        jmp gFUMEnd
+        ; Main Menu Key handling
+        jsr SCNKEY
+        jsr GETIN
+        cmp #0
+        beq gFUMReturn
+        cmp #KEY_F1
+        beq gFUMLevel
+        cmp #KEY_F3
+        beq gFUMHangarMenu
+        cmp #KEY_F5
+        beq gFUMShowCredits
+        jmp gFUMReturn
+
 gFUMStartGame
-        lda #MenuStory
-        sta screenColumn ; reset menu to story screen
-
         jsr gameMenuClearText
         jsr gameFlowShowGameStatus
 
-        ; reset 
+        ; reset
+        lda #MenuGameOver
+        sta screenColumn
         jsr gameFlowResetScore
         jsr gameFlowResetLives
         jsr gameAliensReset
@@ -143,13 +146,113 @@ gFUMStartGame
         ; change state
         lda #FlowStateAlive
         sta flowState
+gFUMReturn
+        rts
+
+gFUMLevel
+        jsr gameMenuLevelChange
+        jsr gameMenuLevelDisplay
+        jmp gFUMEnd
+
+gFUMHangarMenu
+        lda #MenuHangar
+        sta screenColumn
+        jsr gameMenuShowText
+        jsr gameMenuSfxDisplay
+        jsr gameMenuModelReset
+        jmp gFUMModelDisplay
+
+gFUMShowCredits
+        jsr gameFlowResetCreditsTime
+        lda #MenuCredits
+        sta screenColumn
+        jsr gameMenuShowText
+        jmp gFUMEnd
+
+gFUMDecScreenTimer
+        jsr gameFlowDecreaseTime
+        lda time2
+        bne gFUMReturn
+        jmp gFUMShowStory
+
+gFUMHangarKeys
+        lda messageFlag
+        bne gFUMDecMsgTimer
+
+        ; Hangar Menu Key handling
+        jsr SCNKEY
+        jsr GETIN
+        cmp #0
+        beq gFUMReturn
+        cmp #KEY_LEFT
+        beq gFUMPrevModel
+        cmp #KEY_RIGHT
+        beq gFUMNextModel
+        cmp #KEY_F1
+        beq gFUMShipColor
+        cmp #KEY_F2
+        beq gFUMShieldColor
+        cmp #KEY_F3
+        beq gFUMShowStory
+        cmp #KEY_F5
+        beq gFUMSfxSwitch
+        cmp #KEY_F7
+        beq gFUMSaveData
+        jmp gFUMEnd
+
+gFUMDecMsgTimer
+        jsr gameFlowDecreaseTime
+        lda time2
+        bne gFUMEnd
+        jsr gameMenuRestore
+        jsr gameMenuSfxDisplay
+        jmp gFUMEnd
+
+gFUMShipColor
+        jsr gameMenuShipColorNext
+        jmp gFUMModelDisplay
+
+gFUMShieldColor
+        jsr gameMenuShieldColorNext
+        jsr gameMenuColorDisplay
+        jmp gFUMEnd
+
+gFUMPrevModel
+        jsr gameMenuModelPrevious
+        jmp gFUMModelDisplay
+
+gFUMNextModel
+        jsr gameMenuModelNext
+        jmp gFUMModelDisplay
+
+gFUMSfxSwitch
+        jsr gameMenuSfxSwitch
+        jmp gFUMEnd
+
+gFUMSaveData
+        jsr gameDataSave
+        jsr gameMenuSaveDisplay
+        jsr gameFlowResetMsgTime
+        jmp gFUMEnd
+
+gFUMShowStory
+        lda #MenuStory
+        sta screenColumn
+        jsr gameMenuModelHide
+        jsr gameMenuShowLogo
+        jsr gameMenuShowText
+        jsr gameMenuLevelDisplay
+        jmp gFUMEnd
+
+gFUMModelDisplay
+        jsr gameMenuColorDisplay
+        jsr gameMenuModelDisplay
+
 gFUMEnd
         rts
 
 ;===============================================================================
-
 gameFlowShowGameStatus
-
         jsr gameflowShieldGaugeDisplay
 
         LIBSCREEN_DRAWTEXT_AAAV flowAmmoX, flowAmmoY, flowAmmoText, White
@@ -158,30 +261,30 @@ gameFlowShowGameStatus
         rts
 
 ;===============================================================================
-
 gameFlowUpdateAlive
-
         rts
 
 ;===============================================================================
-
 gameFlowUpdateDying
-
         LIBSPRITE_ISANIMPLAYING_A playerSprite
         bne gFUDEnd
 
         lda lives
         bne gFUDHasLives
 
+        jsr gameAliensWaveReset
         jsr gameFlowClearStatusLine
+        jsr gameFlowResetGameOverTime
 
         ; change state
         lda #FlowStateMenu
         sta flowState
+        jsr gameMenuShowText
+        jsr gameMenuShowStats
+
         jmp gFUDEnd
 
 gFUDHasLives
-
         LIBINPUT_GETFIREPRESSED
         bne gFUDEnd
 
@@ -196,7 +299,6 @@ gFUDEnd
         rts
 
 ;===============================================================================
-
 gameFlowClearStatusLine
 
         LIBSCREEN_DRAWTEXT_AAAV flowGaugeX, flowGaugeY, flowGaugeClear, White
@@ -205,7 +307,6 @@ gameFlowClearStatusLine
         rts
 
 ;===============================================================================
-
 gameFlowUpdate
 
         ; get the current state
@@ -221,7 +322,6 @@ gameFlowUpdate
         jmp (ZeroPageLow)
 
 ;===============================================================================
-
 gameFlowIncreaseScore
         
         sed             ;set decimal mode
@@ -235,6 +335,13 @@ gameFlowIncreaseScore
         lda score3      ;ten-thousands and hundred-thousands
         adc #00
         sta score3
+        clc
+        lda #1          ;alien destroyed
+        adc aliens1     ;ones and tens
+        sta aliens1
+        lda aliens2     ;hundreds and thousands
+        adc #00
+        sta aliens2
         cld             ;clear decimal mode
 
         jsr gameFlowScoreDisplay
@@ -242,21 +349,20 @@ gameFlowIncreaseScore
         rts
 
 ;===============================================================================
-
 gameFlowResetScore
         
         lda #0
         sta score1
         sta score2
         sta score3
+        sta statsHiScore
 
         jsr gameFlowScoreDisplay 
 
         rts
 
 ;===============================================================================
-
-gameFlowResetTime
+gameFlowResetCreditsTime
 
         lda #$60
         sta time1
@@ -266,7 +372,26 @@ gameFlowResetTime
         rts
 
 ;===============================================================================
+gameFlowResetGameOverTime
 
+        lda #$60
+        sta time1
+
+        lda #GameOverTime
+        sta time2
+        rts
+
+;===============================================================================
+gameFlowResetMsgTime
+
+        lda #$60
+        sta time1
+
+        lda #MessageTime
+        sta time2
+        rts
+
+;===============================================================================
 gameFlowDecreaseTime
 
         lda time2
@@ -286,7 +411,6 @@ gFDTDone
         rts
 
 ;===============================================================================
-
 gameFlowAddBullet
         
         ; Check if Ammo reached 99 (maximum)
@@ -296,9 +420,16 @@ gameFlowAddBullet
 
         sed             ;set decimal mode
         clc
-        lda #$1         ;1 bullet added
+        lda #1          ;1 bullet added
         adc bullets
         sta bullets
+        clc
+        lda #1          ;add to statistics
+        adc bullets1    ;ones and tens
+        sta bullets1
+        lda bullets2    ;hundreds and thousands
+        adc #00
+        sta bullets2
         cld             ;clear decimal mode
 
         jsr gameflowBulletsDisplay
@@ -307,7 +438,6 @@ gFABDone
         rts
 
 ;===============================================================================
-
 gameFlowUseBullet
         
         sed             ;set decimal mode
@@ -322,7 +452,6 @@ gameFlowUseBullet
         rts
 
 ;===============================================================================
-
 gameFlowUpdateGauge
         
         sed             ;set decimal mode
@@ -337,7 +466,6 @@ gameFlowUpdateGauge
         rts
 
 ;===============================================================================
-
 gameFlowResetLives
 
         lda #FlowNumLives
@@ -345,13 +473,16 @@ gameFlowResetLives
 
         lda #0
         sta bullets
+        sta bullets1
+        sta bullets2
+        sta aliens1
+        sta aliens2
 
         jsr gameflowBulletsDisplay
 
         rts
 
 ;===============================================================================
-
 gameFlowPlayerDied
 
         jsr gameBulletsReset ; stops in flight bullets from scoring
@@ -371,9 +502,19 @@ gFPDHasLivesLeft
         rts
 
 ;===============================================================================
-
 gameFlowUpdateHiScore
+        ; Do not update if same score
+        lda score1
+        cmp hiscore1
+        bne gFUCheckHi
+        lda score2
+        cmp hiscore2
+        bne gFUCheckHi
+        lda score3
+        cmp hiscore3
+        beq gFUHNotHi
 
+gFUCheckHi
         ; http://6502.org/tutorials/decimal_mode.html#4.2
         ; a common technique for comparing multi-byte numbers
         lda score1
@@ -382,7 +523,6 @@ gameFlowUpdateHiScore
         sbc hiscore2
         lda score3
         sbc hiscore3
-
         bcc gFUHNotHi
 
         lda score1
@@ -391,13 +531,16 @@ gameFlowUpdateHiScore
         sta hiscore2
         lda score3
         sta hiscore3
+        
+        lda #True
+        sta statsHiScore
 
         jsr gameFlowHiScoreDisplay
+
 gFUHNotHi
         rts
 
 ;===============================================================================
-
 gameFlowScoreDisplay
 
         LIBMATH_ADD8BIT_AVA flowScoreX, 6, flowScoreNumX
@@ -412,7 +555,6 @@ gameFlowScoreDisplay
         rts
 
 ;===============================================================================
-
 gameFlowHiScoreDisplay
 
         LIBMATH_ADD8BIT_AVA flowHiScoreX, 3, flowHiScoreNumX
@@ -427,7 +569,6 @@ gameFlowHiScoreDisplay
         rts
 
 ;===============================================================================
-
 gameflowBulletsDisplay
 
         LIBMATH_ADD8BIT_AVA flowAmmoX, 5, flowAmmoNumX
@@ -435,7 +576,6 @@ gameflowBulletsDisplay
 
         rts
 ;===============================================================================
-
 gameflowShieldGaugeDisplay
         
         lda shieldEnergy
@@ -480,12 +620,11 @@ gFSGDDraw
         rts
 
 ;===============================================================================
-
 gameflowSelectGaugeColor
         ldy shieldEnergy
         cpy #45         ; if shield is critically low change color to red
         bcc gFSGCRed
-        lda #LightBlue
+        lda shieldColor
         sta flowGaugeClr
         jmp gFSGCDone
 
@@ -497,7 +636,6 @@ gFSGCDone
         rts
 
 ;===============================================================================
-
 gameflowMultiplyByTen
 ; Code from: http://codebase64.org/doku.php?id=base:multiplication_with_a_constant
 

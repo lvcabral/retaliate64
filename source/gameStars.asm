@@ -5,7 +5,7 @@
 ;  Copyright (C) 2017 Dion Olsthoorn 
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;==============================================================================
 ; Constants

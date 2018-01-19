@@ -5,7 +5,7 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Constants
@@ -15,33 +15,35 @@
 
 BulletsMax = 10
 Bullet1stCharacter = 64
-BulletSpeed = 3 ; higher number slower bullets
+
 ;===============================================================================
 ; Variables
 
-bulletsXHigh    byte 0
-bulletsXLow     byte 0     
-bulletsY        byte 0
-bulletsXCharCurrent byte 0
-bulletsXOffsetCurrent byte 0
-bulletsYCharCurrent byte 0
-bulletsColorCurrent byte 0
-bulletsDirCurrent byte 0
+bulletsXHigh            byte 0
+bulletsXLow             byte 0     
+bulletsY                byte 0
+bulletsXCharCurrent     byte 0
+bulletsXOffsetCurrent   byte 0
+bulletsYCharCurrent     byte 0
+bulletsColorCurrent     byte 0
+bulletsDirCurrent       byte 0
 
-bulletsActive   dcb BulletsMax, 0
-bulletsXChar    dcb BulletsMax, 0
-bulletsYChar    dcb BulletsMax, 0
-bulletsXOffset  dcb BulletsMax, 0
-bulletsColor    dcb BulletsMax, 0
-bulletsDir      dcb BulletsMax, 0
-bulletsTemp     byte 0
-bulletsXFlag    byte 0
+bulletsActive           dcb BulletsMax, 0
+bulletsXChar            dcb BulletsMax, 0
+bulletsYChar            dcb BulletsMax, 0
+bulletsXOffset          dcb BulletsMax, 0
+bulletsColor            dcb BulletsMax, 0
+bulletsDir              dcb BulletsMax, 0
+bulletsTemp             byte 0
+bulletsXFlag            byte 0
 
-bulletsXCharCol byte 0
-bulletsYCharCol byte 0
-bulletsDirCol   byte 0
+bulletsXCharCol         byte 0
+bulletsYCharCol         byte 0
+bulletsDirCol           byte 0
 
-bulletsUpdCnt   byte 0
+bulletsUpdCnt           byte 0
+bulletSpeedArray        byte 3, 3, 1    ; higher number slower bullets
+bulletSpeed             byte 3
 
 ;===============================================================================
 ; Macros/Subroutines
@@ -131,7 +133,7 @@ gameBulletsUpdate
         ldx #0
 
         lda bulletsUpdCnt
-        cmp #BulletSpeed
+        cmp bulletSpeed
         beq buloop
 
         inc bulletsUpdCnt

@@ -4,12 +4,11 @@
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;==============================================================================
 ; Constants
 
-PlayerFrame             = 0
 ShieldFirst             = 1
 ShieldLast              = 4
 PlayerExplode           = 7
@@ -25,25 +24,32 @@ PlayerXMaxHigh          = 1     ; Reduced X range to increase difficulty
 PlayerXMaxLow           = 40
 PlayerYMin              = 220
 PlayerYMax              = 220
+PlayerMaxModels         = 5
 ShieldMaxEnergy         = $9A   ; Handled as decimal
 
 ;===============================================================================
 ; Variables
 
-playerSprite    byte 7
-shieldSprite    byte 0
-playerXHigh     byte PlayerStartXHigh
-playerXLow      byte PlayerStartXLow
-playerY         byte PlayerStartY
-playerXChar     byte 0
-playerXOffset   byte 0
-playerYChar     byte 0
-playerYOffset   byte 0
-playerActive    byte False
-playerWillDie   byte False
-shieldActive    byte False
-shieldEnergy    byte ShieldMaxEnergy
-shieldSpeed     byte 2
+playerFrameArray        byte 0, 26, 27, 28, 29
+playerFrameIndex        byte 0
+playerFrame             byte 0
+playerColor             byte Red
+playerSprite            byte 7
+shieldSprite            byte 0
+playerXHigh             byte PlayerStartXHigh
+playerXLow              byte PlayerStartXLow
+playerY                 byte PlayerStartY
+playerXChar             byte 0
+playerXOffset           byte 0
+playerYChar             byte 0
+playerYOffset           byte 0
+playerActive            byte False
+playerWillDie           byte False
+shieldActive            byte False
+shieldColor             byte LightBlue
+shieldEnergy            byte ShieldMaxEnergy
+shieldSpeedArray        byte 1, 2, 3
+shieldSpeed             byte 2
 
 ;===============================================================================
 ; Macros/Subroutines
@@ -63,13 +69,26 @@ gamePlayerReset
         lda #ShieldMaxEnergy
         sta shieldEnergy
 
+        ldx playerFrameIndex
+        lda playerFrameArray,X
+        sta playerFrame
+
+        ldx shipColorIndex
+        lda menuColorArray,X
+        sta playerColor
+
+        ldx shldColorIndex
+        lda menuColorArray,X
+        sta shieldColor
+
         LIBSPRITE_ENABLE_AV             shieldSprite, False
         LIBSPRITE_PLAYANIM_AVVVV        shieldSprite, ShieldFirst, ShieldLast, 5, True
-        LIBSPRITE_SETCOLOR_AV           shieldSprite, LightBlue
+        LIBSPRITE_SETCOLOR_AA           shieldSprite, shieldColor
+        LIBSPRITE_MULTICOLORENABLE_AV   shieldSprite, False
 
         LIBSPRITE_ENABLE_AV             playerSprite, True
-        LIBSPRITE_SETFRAME_AV           playerSprite, PlayerFrame
-        LIBSPRITE_SETCOLOR_AV           playerSprite, Red
+        LIBSPRITE_SETFRAME_AA           playerSprite, playerFrame
+        LIBSPRITE_SETCOLOR_AA           playerSprite, playerColor
 
         lda #PlayerStartXHigh
         sta playerXHigh
@@ -80,8 +99,6 @@ gamePlayerReset
         LIBSPRITE_SETPOSITION_AAAA playerSprite, playerXHigh, playerXLow, playerY
         LIBSPRITE_SETPOSITION_AAAA shieldSprite, playerXHigh, playerXLow, playerY
         LIBSPRITE_DIDCOLLIDEWITHSPRITE_A playerSprite ; clear collision flag
-
-
 
         jsr gameFlowUpdateGauge
 
@@ -262,16 +279,26 @@ gamePlayerUpdateShieldEnergy
 gPISERecoverEnergy        
         lda shieldEnergy
         cmp #ShieldMaxEnergy
-        beq gPISEDone
+        bcs gPISEMax
+        clc
         adc shieldSpeed
         sta shieldEnergy
         jmp gPISECUpdate
 gPISEConsumeEnergy
         lda shieldEnergy
-        beq gPISEDone
+        cmp shieldSpeed
+        bcc gPISEMin
+        sec
         sbc shieldSpeed
+        sta shieldEnergy
+        jmp gPISECUpdate
+gPISEMin
+        lda #0
+        sta shieldEnergy
+        jmp gPISECUpdate
+gPISEMax
+        lda #ShieldMaxEnergy
         sta shieldEnergy
 gPISECUpdate
         jsr gameFlowUpdateGauge
-gPISEDone
         rts
