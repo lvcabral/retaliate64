@@ -1,5 +1,11 @@
 ## Retaliate 64 Changelog
 
+##### v0.2.1 - 21-Jan-20178 - Freeze Hotfix
+
+- Fixed bug #1 - Hangar save option (F7) freezing the game
+- Fixed bug #2 - Key combination shift+C= scrambling the screen
+- Compressed prg with exomizer to speedup load time
+
 ##### v0.2 - 18-Jan-20178 - Hangar Screen and Skill levels
 
 - Added 3 Difficulty Levels (Easy, Normal, Hard)
