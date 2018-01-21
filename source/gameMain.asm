@@ -39,7 +39,11 @@
         ; Disable run/stop + restore keys
         lda #$FC 
         sta $0328
-
+        
+        ; Disable shift + C= keys
+        lda $80
+        sta $0291
+        
         ; Set border and background colors
         ; The last 3 parameters are not used yet
         LIBSCREEN_SETCOLORS Black, Black, Black, Black, Black
