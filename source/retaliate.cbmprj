@@ -43,6 +43,7 @@
         <FileName>gameBullets.asm</FileName>
         <FileName>gamePlayer.asm</FileName>
         <FileName>gameStars.asm</FileName>
+        <FileName>gameData.asm</FileName>
         <FileName>gameSplash.asm</FileName>
         <FileName>libInput.asm</FileName>
         <FileName>libMath.asm</FileName>
@@ -50,7 +51,6 @@
         <FileName>libSound.asm</FileName>
         <FileName>libSprite.asm</FileName>
         <FileName>gameMemory.asm</FileName>
-        <FileName>gameData.asm</FileName>
     </BuildList>
     <DetermineBuildOrder>1</DetermineBuildOrder>
     <PaddingByte>0</PaddingByte>
@@ -108,7 +108,7 @@
             <Regions />
             <Breakpoints />
             <Bookmarks />
-            <Topmost>True</Topmost>
+            <Topmost>False</Topmost>
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
@@ -119,7 +119,7 @@
             <Regions />
             <Breakpoints />
             <Bookmarks />
-            <Topmost>False</Topmost>
+            <Topmost>True</Topmost>
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
