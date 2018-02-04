@@ -21,7 +21,7 @@ AlienRed = 5
 AlienShooter = 6
 AlienFirePos = 70
 WavesMax = 10
-WaveIndexMax = 55 ; (WavesMax - 1) * 6 + 1
+WaveIndexMax = 55 ; (WavesMax - 1) * AliensMax + 1
 
 ;===============================================================================
 ; Variables
@@ -92,7 +92,6 @@ aliensSpeedArray        byte   3, 3, 6
 ; Macros/Subroutines
 
 gameAliensReset
-
         lda #0
         sta aliensWaveIndex
         sta aliensWaveTimeIndex
@@ -102,7 +101,6 @@ gameAliensReset
 
 ;==============================================================================
 gameAliensWaveReset
-
         ldx #0
         stx aliensSprite
         stx aliensStep
@@ -166,27 +164,25 @@ gARSetSprite
         bcc gARDone
         lda #0
         sta aliensWaveIndex
+
 gARDone
         rts
 
 ;==============================================================================
-
 gameAliensSetupSprite
         LIBSPRITE_SETPOSITION_AAAA aliensSprite, aliensXHigh, aliensXLow, aliensY
 
         ; update the alien char positions
         LIBSCREEN_PIXELTOCHAR_AAVAVAAAA aliensXHigh, aliensXLow, 12, aliensY, 40, aliensXChar, aliensXOffset, aliensYChar, aliensYOffset
 
-        LIBSPRITE_STOPANIM_A          aliensSprite
-        LIBSPRITE_ENABLE_AV           aliensSprite, False
-        LIBSPRITE_SETFRAME_AA         aliensSprite, aliensFrame
-        LIBSPRITE_SETCOLOR_AA         aliensSprite, aliensColor
+        LIBSPRITE_STOPANIM_A  aliensSprite
+        LIBSPRITE_ENABLE_AV   aliensSprite, False
+        LIBSPRITE_SETFRAME_AA aliensSprite, aliensFrame
+        LIBSPRITE_SETCOLOR_AA aliensSprite, aliensColor
         rts
 
 ;===============================================================================
-
 gameAliensResetTime
-
         lda #$60
         sta time1
 
@@ -203,7 +199,6 @@ gARTDone
         rts
 
 ;==============================================================================
-
 gameAliensUpdate
         lda playerActive
         beq gAUReturn
@@ -268,16 +263,12 @@ gAUEndWave
         lda #0
         sta aliensCount
         lda #255
-        cmp aliensYFire
-        beq gAUReturn
         sta aliensYFire
 gAUReturn
         rts
 
 ;==============================================================================
-
 gameAliensGetVariables
-
         lda aliensActiveArray,X
         sta aliensActive
 
@@ -305,9 +296,7 @@ gameAliensGetVariables
         rts
 
 ;==============================================================================
-
 gameAliensUpdatePosition
-
         lda playerActive ; only move if the player is alive
         beq gAUPISetPosition
 
@@ -331,7 +320,7 @@ gAUPIIncMove
         clc
         adc aliensSpeed
         sta aliensY
-        cmp #254
+        cmp #250
         bcs gAUPIMoveUp
 
         jsr gameAliensUpdatePriority
@@ -357,7 +346,6 @@ gAUPISetPosition
         rts
 
 ;==============================================================================
-
 gameAliensUpdatePriority
         ; prevent aliens to cover text on screen, but stay over the stars
         ldy aliensY
@@ -380,7 +368,6 @@ gAUPRDone
         rts
 
 ;==============================================================================
-
 gameAliensUpdateFiring
         lda playerActive ; only fire if the player is alive
         beq gAUFDontfire
@@ -420,7 +407,6 @@ gAUFDontfire
         rts
 
 ;==============================================================================
-
 gameAliensUpdateCollisions
         lda #5 ;killed by shield
         sta aliensScore
@@ -444,14 +430,13 @@ gAUCDone
         rts
 
 ;==============================================================================
-
 gameAliensKill
         ; run explosion animation
         LIBSPRITE_PLAYANIM_AVVVV      aliensSprite, AliensExplode, FinishExplode, 1, False
         LIBSPRITE_SETCOLOR_AV         aliensSprite, Yellow
 
         ; play explosion sound
-        LIBSOUND_PLAY_VAA 2, soundExplosionHigh, soundExplosionLow
+        LIBSOUND_PLAY_VAA 1, soundExplosionHigh, soundExplosionLow
 
         ; don't increase score when the player dies together
         lda playerWillDie
@@ -467,7 +452,6 @@ gAKDone
         rts
 
 ;==============================================================================
-
 gameAliensSetVariables
         ldx aliensTemp ; restore X register as it gets trashed
 
@@ -485,7 +469,6 @@ gameAliensSetVariables
         rts
 
 ;==============================================================================
-
 gameAliensUpdateInactive
         lda time2
         beq gAUICheckWave

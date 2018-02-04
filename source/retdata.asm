@@ -1,9 +1,10 @@
-; Sample data file for debugging
-
+; Default Data File (Press F6 to build)
 * = $0340
         byte 0,0,0    ; High score
-        byte 2        ; Player frame
-        byte 1        ; Player color
-        byte 2        ; Shield color
-        byte 1        ; Disable SFX
-        byte 0,0,0    ; Future use
+        byte 0        ; Player frame
+        byte 0        ; Player color
+        byte 7        ; Shield color
+        byte 0        ; Disable SFX
+        byte 0        ; Disable Music
+        byte 1        ; Difficulty level
+        byte 255      ; Future use

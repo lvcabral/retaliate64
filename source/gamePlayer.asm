@@ -69,22 +69,8 @@ gamePlayerReset
         lda #ShieldMaxEnergy
         sta shieldEnergy
 
-        ldx playerFrameIndex
-        lda playerFrameArray,X
-        sta playerFrame
-
-        ldx shipColorIndex
-        lda menuColorArray,X
-        sta playerColor
-
-        ldx shldColorIndex
-        lda menuColorArray,X
-        sta shieldColor
-
-        LIBSPRITE_ENABLE_AV             shieldSprite, False
-        LIBSPRITE_PLAYANIM_AVVVV        shieldSprite, ShieldFirst, ShieldLast, 5, True
-        LIBSPRITE_SETCOLOR_AA           shieldSprite, shieldColor
-        LIBSPRITE_MULTICOLORENABLE_AV   shieldSprite, False
+        jsr gamePlayerLoadConfig
+        jsr gamePlayerSetupShield
 
         LIBSPRITE_ENABLE_AV             playerSprite, True
         LIBSPRITE_SETFRAME_AA           playerSprite, playerFrame
@@ -100,12 +86,39 @@ gamePlayerReset
         LIBSPRITE_SETPOSITION_AAAA shieldSprite, playerXHigh, playerXLow, playerY
         LIBSPRITE_DIDCOLLIDEWITHSPRITE_A playerSprite ; clear collision flag
 
+        lda 0
+        sta lastEnergy
+        sta shieldActive
+
         jsr gameFlowUpdateGauge
 
         rts
 
-;===============================================================================
 
+;===============================================================================
+gamePlayerLoadConfig
+        ldx playerFrameIndex
+        lda playerFrameArray,X
+        sta playerFrame
+
+        ldx shipColorIndex
+        lda menuColorArray,X
+        sta playerColor
+
+        ldx shldColorIndex
+        lda menuColorArray,X
+        sta shieldColor
+        rts
+
+;===============================================================================
+gamePlayerSetupShield
+        LIBSPRITE_ENABLE_AV             shieldSprite, False
+        LIBSPRITE_PLAYANIM_AVVVV        shieldSprite, ShieldFirst, ShieldLast, 5, True
+        LIBSPRITE_SETCOLOR_AA           shieldSprite, shieldColor
+        LIBSPRITE_MULTICOLORENABLE_AV   shieldSprite, False
+        rts
+
+;===============================================================================
 gamePlayerUpdate
 
         lda playerActive
@@ -180,6 +193,7 @@ gamePlayerKilled
         LIBSPRITE_ENABLE_AV       shieldSprite, False
 
         ; play explosion sound
+        jsr libSoundInit
         LIBSOUND_PLAY_VAA 1, soundExplosionHigh, soundExplosionLow
 
         jsr gameFlowPlayerDied
@@ -214,7 +228,7 @@ gamePlayerUpdateFiring
         GAMEBULLETS_FIRE_AAAVV playerXChar, playerXOffset, playerYChar, Yellow, 1
 
         ; play the firing sound
-        LIBSOUND_PLAY_VAA 0, soundFiringHigh, soundFiringLow
+        LIBSOUND_PLAY_VAA 1, soundFiringHigh, soundFiringLow
 
         jsr gameFlowUseBullet
 

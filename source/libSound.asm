@@ -99,7 +99,7 @@ CmdEnd                  = 8
 
 ;===============================================================================
 ; Variables
-soundEffectsDisabled    byte 0
+soundDisabled           byte 0
 soundVoiceActive        byte 0, 0, 0
 soundVoiceCmdPtrHigh    byte 0, 0, 0
 soundVoiceCmdPtrLow     byte 0, 0, 0
@@ -195,7 +195,7 @@ soundEndingLow  byte <soundEnding
 
 libSoundInit
 
-        ; Clear all the SID registers
+        ; Clear all the SID registers and Voice Buffer
         ldx #0
         lda #0
 @loop1  sta FRELO1,X
@@ -217,6 +217,13 @@ libSoundInit
         cpx #$19
         bcc @loop3
 
+        ldx #0
+        lda #0
+@loop4  sta soundVoiceActive,X
+        inx
+        cpx #3
+        bcc @loop4
+
         ; Volume & Filter Select
         lda #15
         sta SIGVOL
@@ -229,7 +236,8 @@ defm LIBSOUND_PLAY_VAA  ; /1 = Voice                   (Value)
                         ; /2 = Command Buffer Ptr High (Address)
                         ; /3 = Command Buffer Ptr Low  (Address)
 
-        lda soundEffectsDisabled
+
+        lda soundDisabled
         bne @done
 
         ldx #/1

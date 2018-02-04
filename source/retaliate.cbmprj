@@ -50,6 +50,7 @@
         <FileName>libScreen.asm</FileName>
         <FileName>libSound.asm</FileName>
         <FileName>libSprite.asm</FileName>
+        <FileName>libMusic.asm</FileName>
         <FileName>gameMemory.asm</FileName>
     </BuildList>
     <DetermineBuildOrder>1</DetermineBuildOrder>
@@ -109,7 +110,7 @@
             <Breakpoints />
             <Bookmarks />
             <Topmost>False</Topmost>
-            <FileOpen>True</FileOpen>
+            <FileOpen>False</FileOpen>
         </SourceFile>
         <SourceFile>
             <Name>gameMain.asm</Name>
@@ -119,7 +120,7 @@
             <Regions />
             <Breakpoints />
             <Bookmarks />
-            <Topmost>True</Topmost>
+            <Topmost>False</Topmost>
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
@@ -152,8 +153,8 @@
             <Regions />
             <Breakpoints />
             <Bookmarks />
-            <Topmost>False</Topmost>
-            <FileOpen>False</FileOpen>
+            <Topmost>True</Topmost>
+            <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
             <Name>gameSplash.asm</Name>
@@ -164,7 +165,7 @@
             <Breakpoints />
             <Bookmarks />
             <Topmost>False</Topmost>
-            <FileOpen>False</FileOpen>
+            <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
             <Name>gameStars.asm</Name>
@@ -190,6 +191,17 @@
         </SourceFile>
         <SourceFile>
             <Name>libMath.asm</Name>
+            <PrgName />
+            <FileType>2</FileType>
+            <IncludeInBuild>True</IncludeInBuild>
+            <Regions />
+            <Breakpoints />
+            <Bookmarks />
+            <Topmost>False</Topmost>
+            <FileOpen>False</FileOpen>
+        </SourceFile>
+        <SourceFile>
+            <Name>libMusic.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>

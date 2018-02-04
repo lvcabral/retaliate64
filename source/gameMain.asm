@@ -20,30 +20,42 @@
 ;===============================================================================
 ; Initialize
 
-        ; Load game data from disk
-        jsr gameDataLoad
+        ; Turn off CIAs Timer interrupts ($7F = %01111111)
+        ldy #$7F
+        sty $DC0D
+        sty $DD0D
+        ; Cancel all CIA-IRQs in queue/unprocessed
+        lda $DC0D
+        lda $DD0D
 
-        ; Show Splash
-        jsr startSplash
+        ; Disable BASIC ROM
+        lda #$36
+        sta $01
 
-        ; Move Screen data to 3rd memory bank
-        lda $DD00
-        and #%11111100
-        ora #%00000001
-        sta $DD00
-
-        ; Turn off interrupts to stop LIBSCREEN_WAIT failing every so 
-        ; often when the kernal interrupt syncs up with the scanline test
-        sei
+        ; Disable shift + C= keys
+        lda $80
+        sta $0291
 
         ; Disable run/stop + restore keys
         lda #$FC 
         sta $0328
-        
-        ; Disable shift + C= keys
-        lda $80
-        sta $0291
-        
+
+        ; Save VIC II mode (NTSC/PAL)
+        lda $02A6
+        sta vicMode
+
+        ; Load game data from disk
+        jsr gameDataLoad
+
+        ; Move VIC II to see 2nd memory bank ($4000-$7FFF)
+        lda $DD00
+        and #%11111100
+        ora #%00000010
+        sta $DD00
+
+        ; Show Splash Bitmap
+        jsr startSplash
+
         ; Set border and background colors
         ; The last 3 parameters are not used yet
         LIBSCREEN_SETCOLORS Black, Black, Black, Black, Black
@@ -58,11 +70,11 @@
         LIBSPRITE_SETMULTICOLORS_VV LightBlue, White
         
         ; Set the memory location of the custom character set
-        LIBSCREEN_SETCHARMEMORY 10
+        LIBSCREEN_SETCHARMEMORY CHARSETPOS
 
-        ; Initialize the library
+        ; Initialize SID registers
         jsr libSoundInit
-        
+
         ; Initialize the game
         jsr gamePlayerInit
         jsr gameFlowInit
@@ -75,23 +87,44 @@ gMLoop
 
         ; Start code timer change border color
         ;inc EXTCOL
+        lda flowPaused
+        bne gMFlow
 
         ; Update the library
         jsr libInputUpdate
         jsr libSpritesUpdate
-        jsr libSoundUpdate
 
         ; Update the game
+        lda playerActive
+        beq gMSound
+
+        ;inc EXTCOL
         jsr gameAliensUpdate
+        ;inc EXTCOL
         jsr gamePlayerUpdate
+        ;inc EXTCOL
         jsr gameBulletsUpdate
+
+gMSound
+        lda soundDisabled
+        bne gMMusic
+        ;inc EXTCOL
+        jsr libSoundUpdate
+
+gMMusic
+        lda sidDisabled
+        bne gMStars
+        jsr libMusicUpdate
+gMStars
+        ;inc EXTCOL
         jsr gameStarsUpdate
+gMFlow
+        ;inc EXTCOL
         jsr gameFlowUpdate
 
         ; End code timer reset border color
-        ;dec EXTCOL
+        ;lda #0
+        ;sta EXTCOL
 
         ; Loop back to the start of the game loop
         jmp gMLoop
-
-*=$4711 ;Move game code to load after the splash screen

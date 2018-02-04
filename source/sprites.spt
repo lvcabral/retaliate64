@@ -691,7 +691,7 @@
       <data>8388597</data>
       <data>8214517</data>
       <data>8214005</data>
-      <data>8192501</data>
+      <data>8193525</data>
       <data>8192501</data>
       <data>8192501</data>
       <data>8192501</data>
@@ -1050,9 +1050,184 @@
       <data>33280</data>
     </sdata>
    </sprite>
+  <sprite>
+    <description></description>
+    <links></links>
+    <include>True</include>
+    <multi>True</multi>
+    <spbkgnd>0</spbkgnd>
+    <spcolour>15</spcolour>
+    <mcolour1>14</mcolour1>
+    <mcolour2>1</mcolour2>
+    <expandx>False</expandx>
+    <expandy>False</expandy>
+    <sdata>
+      <data>1376597</data>
+      <data>5570901</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8214005</data>
+      <data>8214005</data>
+      <data>8388597</data>
+      <data>8388597</data>
+      <data>8388597</data>
+      <data>8214005</data>
+      <data>8214005</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>8192501</data>
+      <data>7668213</data>
+      <data>5505365</data>
+      <data>5243221</data>
+    </sdata>
+   </sprite>
+  <sprite>
+    <description></description>
+    <links></links>
+    <include>True</include>
+    <multi>True</multi>
+    <spbkgnd>0</spbkgnd>
+    <spcolour>6</spcolour>
+    <mcolour1>14</mcolour1>
+    <mcolour2>1</mcolour2>
+    <expandx>False</expandx>
+    <expandy>False</expandy>
+    <sdata>
+      <data>5592404</data>
+      <data>5592405</data>
+      <data>6288765</data>
+      <data>8387965</data>
+      <data>16777085</data>
+      <data>16080767</data>
+      <data>16080767</data>
+      <data>16080767</data>
+      <data>16080767</data>
+      <data>16080767</data>
+      <data>16777087</data>
+      <data>16777085</data>
+      <data>16777085</data>
+      <data>16080765</data>
+      <data>16080765</data>
+      <data>15998845</data>
+      <data>15998845</data>
+      <data>15998845</data>
+      <data>15998845</data>
+      <data>5510997</data>
+      <data>5506389</data>
+    </sdata>
+   </sprite>
+  <sprite>
+    <description></description>
+    <links></links>
+    <include>True</include>
+    <multi>True</multi>
+    <spbkgnd>0</spbkgnd>
+    <spcolour>6</spcolour>
+    <mcolour1>14</mcolour1>
+    <mcolour2>1</mcolour2>
+    <expandx>False</expandx>
+    <expandy>False</expandy>
+    <sdata>
+      <data>344405</data>
+      <data>349525</data>
+      <data>481279</data>
+      <data>4710399</data>
+      <data>5758975</data>
+      <data>5758805</data>
+      <data>5758805</data>
+      <data>14147413</data>
+      <data>14147413</data>
+      <data>16244607</data>
+      <data>16768863</data>
+      <data>16768855</data>
+      <data>16768853</data>
+      <data>8380245</data>
+      <data>6283093</data>
+      <data>6283093</data>
+      <data>5758975</data>
+      <data>5758975</data>
+      <data>1562623</data>
+      <data>349525</data>
+      <data>87381</data>
+    </sdata>
+   </sprite>
+  <sprite>
+    <description></description>
+    <links></links>
+    <include>True</include>
+    <multi>True</multi>
+    <spbkgnd>0</spbkgnd>
+    <spcolour>6</spcolour>
+    <mcolour1>14</mcolour1>
+    <mcolour2>1</mcolour2>
+    <expandx>False</expandx>
+    <expandy>False</expandy>
+    <sdata>
+      <data>5592400</data>
+      <data>5592404</data>
+      <data>16089045</data>
+      <data>16121845</data>
+      <data>16252925</data>
+      <data>5756285</data>
+      <data>5756285</data>
+      <data>5756285</data>
+      <data>5756285</data>
+      <data>14144893</data>
+      <data>16252925</data>
+      <data>16252925</data>
+      <data>16242045</data>
+      <data>16242045</data>
+      <data>16240765</data>
+      <data>16240765</data>
+      <data>16240765</data>
+      <data>16240765</data>
+      <data>16240765</data>
+      <data>5591133</data>
+      <data>5591061</data>
+    </sdata>
+   </sprite>
+  <sprite>
+    <description></description>
+    <links></links>
+    <include>True</include>
+    <multi>True</multi>
+    <spbkgnd>0</spbkgnd>
+    <spcolour>15</spcolour>
+    <mcolour1>14</mcolour1>
+    <mcolour2>1</mcolour2>
+    <expandx>False</expandx>
+    <expandy>False</expandy>
+    <sdata>
+      <data>1398016</data>
+      <data>5592384</data>
+      <data>8387920</data>
+      <data>8388436</data>
+      <data>8388564</data>
+      <data>8214484</data>
+      <data>8214004</data>
+      <data>8214004</data>
+      <data>8214484</data>
+      <data>8388564</data>
+      <data>8388564</data>
+      <data>8388596</data>
+      <data>8214516</data>
+      <data>8214004</data>
+      <data>8193524</data>
+      <data>8192500</data>
+      <data>8192500</data>
+      <data>8192500</data>
+      <data>7668212</data>
+      <data>5505364</data>
+      <data>5243220</data>
+    </sdata>
+   </sprite>
     <!-- Scratchpad data -->
     <ScratchpadData>
-        <MaxSprites>2</MaxSprites>
+        <MaxSprites>1</MaxSprites>
         <Cell>A</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
@@ -1066,13 +1241,15 @@
         <Cell>A</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
-        <Cell>A0190000000000099;0190000000000000;</Cell>
+        <Cell>A</Cell>
+        <Cell>A</Cell>
         <Cell>A0200000000000099;</Cell>
         <Cell>A0210000000000099;</Cell>
         <Cell>A0220000000000099;</Cell>
         <Cell>A0230000000000099;</Cell>
         <Cell>A0240000000000099;</Cell>
         <Cell>A0250000000000099;</Cell>
+        <Cell>A0260000000000099;</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
@@ -1090,13 +1267,11 @@
         <Cell>A</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
-        <Cell>A</Cell>
+        <Cell>A0310000000000099;</Cell>
+        <Cell>A0320000000000099;</Cell>
+        <Cell>A0330000000000099;</Cell>
+        <Cell>A0340000000000099;</Cell>
+        <Cell>A0350000000000099;</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>
         <Cell>A</Cell>

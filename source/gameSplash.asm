@@ -7,64 +7,65 @@
 ;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
+; Constants
+
+BITMAPRAM = $4000
+
+;===============================================================================
 ; Macros/Subroutines
 
 startSplash
+        lda #$A0        ; Screen Memory @ $2800 + Bitmap @ $0000
+        sta VMCSB
         lda #$18
-        sta $d018
-
-        lda #$18
-        sta $d016
-
-        lda #$3b
-        sta $d011 ;Enable Bitmap mode
-
-        lda #$00
-        sta $d020
-        lda $4710
-        sta $d021
+        sta SCROLX      ; Set Multicolor mode
+        lda #$3B
+        sta SCROLY      ; Enable Bitmap mode
+        lda #Black
+        sta EXTCOL      ; Border color
+        lda BITMAPRAM+$2710
+        sta BGCOL0      ; Background color
         ldx #$00
+
 drawSplash
-        lda $3f40,X
-        sta $0400,X
-        lda $4328,X
-        sta $d800,X
-        lda $4040,X
-        sta $0500,X
-        lda $4428,X
-        sta $d900,X
-        lda $4140,X
-        sta $0600,X
-        lda $4528,X
-        sta $da00,X
-        lda $4240,X
-        sta $0700,X
-        lda $4628,X
-        sta $db00,X
+        lda BITMAPRAM+$1F40,X
+        sta SCREENRAM,X
+        lda BITMAPRAM+$2328,X
+        sta COLORRAM,X
+        lda BITMAPRAM+$2040,X
+        sta SCREENRAM+$100,X
+        lda BITMAPRAM+$2428,X
+        sta COLORRAM+$100,X
+        lda BITMAPRAM+$2140,X
+        sta SCREENRAM+$200,X
+        lda BITMAPRAM+$2528,X
+        sta COLORRAM+$200,X
+        lda BITMAPRAM+$2240,X
+        sta SCREENRAM+$300,X
+        lda BITMAPRAM+$2628,X
+        sta COLORRAM+$300,X
         inx
         bne drawSplash
+
 loopSplash
-        ; Wait joystick fire
         clc 
-        lda $DC00
-        and #$10  ;mask %00010000
+        lda CIAPRA
+        and #GameportFireMask
         beq endSplash
-        ; Wait space bar or return key
         jsr SCNKEY
         jsr GETIN
-        cmp #0
+        cmp #$00
         beq loopSplash
         cmp #KEY_RETURN
         beq endSplash
         cmp #KEY_SPACE
         beq endSplash
 
-        ; loop if nothing was pressed
-        jmp loopSplash
+        jmp loopSplash ; loop if nothing was pressed
 endSplash
-        lda #$9b  ;Disable Bitmap mode
-        sta $d011
-        lda #0
-        sta $d016 ;Set default text mode
+        lda #$9B   ; Disable Bitmap mode
+        sta SCROLY
+        lda #$08   ; Disable Multicolor mode
+        sta SCROLX
         LIBINPUT_GETFIREPRESSED ; clear fire 
         rts

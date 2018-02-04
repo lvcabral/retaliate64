@@ -39,42 +39,51 @@ ZeroPageHigh2   = $FE
 ; $0200-$9FFF  RAM (40K)
 
 ; $0801
-; gameMain.asm is placed here by using the *=$0801 directive 
+; Game code is placed here by using the *=$0801 directive on gameMain.asm
 
-* = $0900
+; Splash screen bitmap
+* = $4000
+        incbin "splash.kla",2
+
+SCREENRAM       = $6800
+SPRITE0         = $6BF8
+
+; 176 decimal * 64(sprite size) = 11264 (hex $2C00)
+; VIC II is looking at $4000 adding $2C00 we have $6C00
+SPRITERAM       = 176
+* = $6C00
+        incbin "sprites.spt",1,35,true
+
+; The character set ($D018) pointing to 14 decimal (%xxxx101x)
+; So charmem is at $3800 adding bank start $4000 we have $7800
+CHARSETPOS      = 14
+* = $7800
+        ; letters and numbers from the font "Teggst shower 5"
+        ; http://kofler.dot.at/c64/download/teggst_shower_5.zip
+        incbin "characters.cst",0,102
+
+; Menu screens
+* = $8000
 MAPRAM
-        ; Menu screens
-        ; Export List: 1-4(9),1-4(10),1-4(11),1-4(12),1-4(13),1-4(14),1-4(15),1-4(16),1-4(17),1-4(18),1-4(19),1-4(20),1-4(22),1-4(24)
-        incbin screens.bin
-
-* = $2000
-        ; Splash screen bitmap
-        incbin splash.bin
-
-; $4711
-; Rest of game code (from gameFlow.asm) is placed here,
-; after the splash, to avoid 8K limit
-
-SCREENRAM       = $8400
-SPRITE0         = $87F8
+        ; Export List: 1-5(9),1-5(10),1-5(11),1-5(12),1-5(13),1-5(14),1-5(15),1-5(16),1-5(17),1-5(18),1-5(19),1-5(20),1-5(21),1-5(22),1-5(24)
+        incbin "screens.bin"
 
 ;===============================================================================
 ; $A000-$BFFF  BASIC ROM (8K)
 
-; 128 decimal * 64(sprite size) = 8192 (hex $2000) 
-; VIC II is looking at $8000 adding $2000 we have $A000
-SPRITERAM       = 128
-* = $A000
-        incbin sprites.bin
-; The character set ($D018) is pointing to 10 decimal (%xxxx101x)
-; So charmem is at $2800 plus bank start $8000 we have $A800
-* = $A800
-        ; letters and numbers from the font "Teggst shower 5"
-        ; http://kofler.dot.at/c64/download/teggst_shower_5.zip
-        incbin characters.bin
- 
 ;===============================================================================
 ; $C000-$CFFF  RAM (4K)
+
+; SID music
+SIDINIT = $C000
+SIDPLAY = $C006
+SIDSONG = $00   ; Id of the song (inside the SID file)
+
+* = $C000
+SIDLOAD
+        ; Music: Scout (c)1988 by Jeroen Tel
+        ; http://csdb.dk/sid/?id=28205
+        incbin "music.sid", $7E
 
 ;===============================================================================
 ; $D000-$DFFF  IO (4K)
@@ -86,6 +95,7 @@ SPRITERAM       = 128
 SP0X            = $D000
 SP0Y            = $D001
 MSIGX           = $D010
+SCROLY          = $D011
 RASTER          = $D012
 SPENA           = $D015
 SCROLX          = $D016
@@ -127,6 +137,9 @@ COLORRAM        = $D800
 CIAPRA          = $DC00
 CIAPRB          = $DC01
 
+;===============================================================================
+; $E000-$FFFF  KERNAL ROM (8K)
+
 ; Kernal Subroutines
 SCNKEY          = $FF9F
 GETIN           = $FFE4
@@ -135,31 +148,8 @@ OPEN            = $FFC0
 SETNAM          = $FFBD
 SETLFS          = $FFBA
 CLRCHN          = $FFCC
+CHROUT          = $FFD2
 LOAD            = $FFD5
 SAVE            = $FFD8
-
-; PETSCII Key Codes
-KEY_RETURN      = $0D
-KEY_DEL         = $14
-KEY_CLR         = $93
-KEY_HOME        = $13
-KEY_INST        = $94
-KEY_SPACE       = $20
-KEY_F1          = $85
-KEY_F2          = $89
-KEY_F3          = $86
-KEY_F4          = $8A
-KEY_F5          = $87
-KEY_F6          = $8B
-KEY_F7          = $88
-KEY_F8          = $8C
-KEY_DOWN        = $11
-KEY_UP          = $91
-KEY_RIGHT       = $1D
-KEY_LEFT        = $9D
-
-;===============================================================================
-; $E000-$FFFF  KERNAL ROM (8K) 
-
 
 ;===============================================================================

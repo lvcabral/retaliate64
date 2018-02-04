@@ -13,7 +13,9 @@ MenuStory    = 0
 MenuCredits  = 40
 MenuHangar   = 80
 MenuGameOver = 120
-CreditsTime  = 9
+MenuInfo     = 160
+
+ScreenTime   = 9
 MessageTime  = 2
 GameOverTime = 5
 
@@ -21,34 +23,63 @@ LevelEasy    = 0
 LevelNormal  = 1
 LevelHard    = 2
 
+ColorCursor  = 92
+
+; PETSCII Key Codes
+KEY_BACK     = $5F
+KEY_RETURN   = $0D
+KEY_DEL      = $14
+KEY_CLR      = $93
+KEY_HOME     = $13
+KEY_INST     = $94
+KEY_SPACE    = $20
+KEY_M        = $4D
+KEY_S        = $53
+KEY_F1       = $85
+KEY_F2       = $89
+KEY_F3       = $86
+KEY_F4       = $8A
+KEY_F5       = $87
+KEY_F6       = $8B
+KEY_F7       = $88
+KEY_F8       = $8C
+KEY_DOWN     = $11
+KEY_UP       = $91
+KEY_RIGHT    = $1D
+KEY_LEFT     = $9D
+
 ;===============================================================================
 ; Variables
 
 Operator Calc
 
-MapRAMRowStartLow ; increments are 4 screens x 40 characters per row (160)
-        byte <MAPRAM,       <MAPRAM+160,  <MAPRAM+320, <MAPRAM+480
-        byte <MAPRAM+640,   <MAPRAM+800,  <MAPRAM+960, <MAPRAM+1120
-        byte <MAPRAM+1280, <MAPRAM+1440, <MAPRAM+1600
-        byte <MAPRAM+1760, <MAPRAM+1920, <MAPRAM+2080
+; 5 screens x 14 rows x 40 characters
+MAPCOLORRAM = MAPRAM + (5 * 15 * 40)
+
+; increments are 5 screens x 40 characters per row (200)
+MapRAMRowStartLow
+        byte <MAPRAM,      <MAPRAM+200,  <MAPRAM+400,  <MAPRAM+600
+        byte <MAPRAM+800,  <MAPRAM+1000, <MAPRAM+1200, <MAPRAM+1400
+        byte <MAPRAM+1600, <MAPRAM+1800, <MAPRAM+2000, <MAPRAM+2200
+        byte <MAPRAM+2400, <MAPRAM+2600, <MAPRAM+2800
 MapRAMRowStartHigh
-        byte >MAPRAM,       >MAPRAM+160,  >MAPRAM+320, >MAPRAM+480
-        byte >MAPRAM+640,   >MAPRAM+800,  >MAPRAM+960, >MAPRAM+1120
-        byte >MAPRAM+1280, >MAPRAM+1440, >MAPRAM+1600
-        byte >MAPRAM+1760, >MAPRAM+1920, >MAPRAM+2080
+        byte >MAPRAM,      >MAPRAM+200,  >MAPRAM+400,  >MAPRAM+600
+        byte >MAPRAM+800,  >MAPRAM+1000, >MAPRAM+1200, >MAPRAM+1400
+        byte >MAPRAM+1600, >MAPRAM+1800, >MAPRAM+2000, >MAPRAM+2200
+        byte >MAPRAM+2400, >MAPRAM+2600, >MAPRAM+2800
 
-MAPCOLORRAM = MAPRAM + (4 * 14 * 40)  ; 3 screens x 14 rows x 40 characters
-
-MapRAMCOLRowStartLow ; increments are number of screens x 40 characters per row
-        byte <MAPCOLORRAM,       <MAPCOLORRAM+160,  <MAPCOLORRAM+320, <MAPCOLORRAM+480
-        byte <MAPCOLORRAM+640,   <MAPCOLORRAM+800,  <MAPCOLORRAM+960, <MAPCOLORRAM+1120
-        byte <MAPCOLORRAM+1280, <MAPCOLORRAM+1440, <MAPCOLORRAM+1600
-        byte <MAPCOLORRAM+1760, <MAPCOLORRAM+1920, <MAPCOLORRAM+2080
+MapRAMCOLRowStartLow
+        byte <MAPCOLORRAM,      <MAPCOLORRAM+200,  <MAPCOLORRAM+400
+        byte <MAPCOLORRAM+600,  <MAPCOLORRAM+800,  <MAPCOLORRAM+1000
+        byte <MAPCOLORRAM+1200, <MAPCOLORRAM+1400, <MAPCOLORRAM+1600
+        byte <MAPCOLORRAM+1800, <MAPCOLORRAM+2000, <MAPCOLORRAM+2200
+        byte <MAPCOLORRAM+2400, <MAPCOLORRAM+2600, <MAPCOLORRAM+2800
 MapRAMCOLRowStartHigh
-        byte >MAPCOLORRAM,       >MAPCOLORRAM+160,  >MAPCOLORRAM+320, >MAPCOLORRAM+480
-        byte >MAPCOLORRAM+640,   >MAPCOLORRAM+800,  >MAPCOLORRAM+960, >MAPCOLORRAM+1120
-        byte >MAPCOLORRAM+1280, >MAPCOLORRAM+1440, >MAPCOLORRAM+1600
-        byte >MAPCOLORRAM+1760, >MAPCOLORRAM+1920, >MAPCOLORRAM+2080
+        byte >MAPCOLORRAM,      >MAPCOLORRAM+200,  >MAPCOLORRAM+400
+        byte >MAPCOLORRAM+600,  >MAPCOLORRAM+800,  >MAPCOLORRAM+1000
+        byte >MAPCOLORRAM+1200, >MAPCOLORRAM+1400, >MAPCOLORRAM+1600
+        byte >MAPCOLORRAM+1800, >MAPCOLORRAM+2000, >MAPCOLORRAM+2200
+        byte >MAPCOLORRAM+2400, >MAPCOLORRAM+2600, >MAPCOLORRAM+2800
 
 Operator HiLo
 
@@ -67,6 +98,7 @@ logoYOffset     byte   0
 logoYChar       byte   0
 logoSprite      byte   0
 logoFrame       byte   0
+logoFlag        byte   0
 
 levelNum        byte LevelNormal
 levelEasyText   text 'easy  '
@@ -75,14 +107,14 @@ levelNormalText text 'normal'
                 byte 0
 levelHardText   text 'hard  '
                 byte 0
-levelPosX       byte 6
+levelPosX       byte 18
 levelPosY       byte 21
 
-msgPosX         byte 2
+msgPosX         byte 1
 msgPosY         byte 21
-menuSaveOK      text '   high score and settings saved    '
+menuSaveOK      text '    high score and settings saved     '
                 byte 0
-menuSaveError   text 'error saving high score and settings'
+menuSaveError   text ' error saving high score and settings '
                 byte 0
 messageFlag     byte 0
 menuColorArray  byte Red, LightRed, Orange, Yellow, LightGreen
@@ -97,7 +129,6 @@ shipCol         byte 0
 shieldRow       byte 17
 shieldCol       byte 0
 
-modelSprite     byte 0
 modelNameOffset byte 0
 modelNames      text '   old faithful    '
                 byte 0
@@ -113,14 +144,16 @@ modelXHigh      byte 0
 modelXLow       byte 228
 modelY          byte 147
 modelNamePosX   byte 18
-modelNamePosY   byte 18
+modelNamePosY   byte 17
 
-sfxOn           text 'on '
+musicPosX       byte 18
+musicPosY       byte 19
+sfxOn           byte $52, $53
                 byte 0
-sfxOff          text 'off'
+sfxOff          text $51, $20
                 byte 0
-sfxPosX         byte 23
-sfxPosY         byte 21
+sfxPosX         byte 28
+sfxPosY         byte 19
 
 statsScoreX     byte 26
 statsScoreY     byte 17
@@ -138,7 +171,6 @@ statsMsgHigh    text '     new high score, great job!     '
 ; Macros/Subroutines
 
 gameMenuShowLogo
-
         ldx #0
         stx logoSprite
         lda #19
@@ -154,13 +186,10 @@ gMSLLoop
         lda logoYArray,X
         sta logoY
 
-        LIBSPRITE_STOPANIM_A          logoSprite
-        LIBSPRITE_ENABLE_AV           logoSprite, True
-        LIBSPRITE_SETFRAME_AA         logoSprite, logoFrame
-        LIBSPRITE_SETCOLOR_AV         logoSprite, LightBlue
-        LIBSPRITE_MULTICOLORENABLE_AV logoSprite, True
-
+        jsr gameMenuLogoSetup
         jsr gameMenuLogoUpdate
+
+        LIBSPRITE_ENABLE_AV logoSprite, True
 
         ; loop for each frame
         inc logoFrame
@@ -171,80 +200,93 @@ gMSLLoop
         rts
 
 ;===============================================================================
-gameMenuLogoUpdate
+gameMenuShowHangar
+        ldx #0
+        stx logoSprite
+        lda #30
+        sta logoFrame
 
-        LIBSPRITE_SETPRIORITY_AV      logoSprite, False
-        LIBSPRITE_SETPOSITION_AAAA logoSprite, logoXHigh, logoXLow, logoY
-        LIBSCREEN_PIXELTOCHAR_AAVAVAAAA logoXHigh, logoXLow, 12, logoY, 40, logoXChar, logoXOffset, logoYChar, logoYOffset
+gMSHLoop
+        inc logoSprite ; x+1
+        cpx #5
+        bcc gMSHShow
+        lda #False
+        sta logoFlag
+        jmp gMSHNext
+gMSHShow
+        lda #True
+        sta logoFlag
+        lda logoXHighArray,X+1
+        sta logoXHigh
+        lda logoXLowArray,X+1
+        sta logoXLow
+        lda logoYArray,X
+        sta logoY
+
+        jsr gameMenuLogoSetup
+        jsr gameMenuLogoUpdate
+
+gMSHNext
+        LIBSPRITE_ENABLE_AA logoSprite, logoFlag
+        ; loop for each frame
+        inc logoFrame
+        inx
+        cpx #7
+        bne gMSHLoop
 
         rts
 
 ;===============================================================================
-gameMenuShowText
+gameMenuLogoSetup
+        LIBSPRITE_STOPANIM_A          logoSprite
+        LIBSPRITE_SETFRAME_AA         logoSprite, logoFrame
+        LIBSPRITE_SETCOLOR_AV         logoSprite, LightBlue
+        LIBSPRITE_MULTICOLORENABLE_AV logoSprite, True
+        rts
 
+;===============================================================================
+gameMenuLogoUpdate
+        LIBSPRITE_SETPRIORITY_AV      logoSprite, False
+        LIBSPRITE_SETPOSITION_AAAA logoSprite, logoXHigh, logoXLow, logoY
+        LIBSCREEN_PIXELTOCHAR_AAVAVAAAA logoXHigh, logoXLow, 12, logoY, 40, logoXChar, logoXOffset, logoYChar, logoYOffset
+        rts
+
+;===============================================================================
+gameMenuShowText
         lda #True
         sta menuDisplayed
 
         ; screen text
-        LIBSCREEN_COPYMAPROW_VVA  0,  8, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  1,  9, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  2, 10, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  3, 11, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  4, 12, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  5, 13, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  6, 14, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  7, 15, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  8, 16, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA  9, 17, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA 10, 18, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA 11, 19, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA 12, 21, screenColumn
-        LIBSCREEN_COPYMAPROW_VVA 13, 23, screenColumn
+repeat 0, 13, idx
+        LIBSCREEN_COPYMAPROW_VVA  idx,  idx + 8, screenColumn
+endrepeat
+        LIBSCREEN_COPYMAPROW_VVA 14, 23, screenColumn
 
         ; screen colors
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  0,  8, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  1,  9, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  2, 10, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  3, 11, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  4, 12, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  5, 13, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  6, 14, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  7, 15, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  8, 16, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  9, 17, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA 10, 18, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA 11, 19, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA 12, 21, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA 13, 23, screenColumn
+repeat 0, 13, idx
+        LIBSCREEN_COPYMAPROWCOLOR_VVA  idx,  idx + 8, screenColumn
+endrepeat
+        LIBSCREEN_COPYMAPROWCOLOR_VVA 14, 23, screenColumn
 
         rts
 
 ;===============================================================================
 gameMenuLevelChange
-
         lda levelNum
         cmp #LevelHard
         beq gMLCEasy
         inc levelNum
-
         jmp gMLCDone
 
 gMLCEasy
         lda #LevelEasy
         sta levelNum
+
 gMLCDone
-        ldx levelNum
-        lda bulletSpeedArray,X
-        sta bulletSpeed
-        lda shieldSpeedArray,X
-        sta shieldSpeed
-        lda aliensSpeedArray,X
-        sta aliensSpeed
         rts
 
 ;===============================================================================
 gameMenuLevelDisplay
-
         lda levelNum
         cmp #LevelHard
         beq gMCDHard
@@ -268,13 +310,13 @@ gMCDDone
 
 ;===============================================================================
 gameMenuShipColorNext
-
         inc shipColorIndex
         lda shipColorIndex
         cmp #11
         bcc gMSCNDone
         lda #0
         sta shipColorIndex
+
 gMSCNDone
         rts
 
@@ -285,75 +327,65 @@ gameMenuColorDisplay
         inc shipCol
         LIBSCREEN_DRAWTEXT_AAAV menuColorX, shipRow, menuColorClear, White
         LIBSCREEN_SETCHARPOSITION_AA shipCol, shipRow
-        LIBSCREEN_SETCHAR_V 30
+        LIBSCREEN_SETCHAR_V ColorCursor
 
         lda shldColorIndex
         sta shieldCol
         inc shieldCol
         LIBSCREEN_DRAWTEXT_AAAV menuColorX, shieldRow, menuColorClear, White
         LIBSCREEN_SETCHARPOSITION_AA shieldCol, shieldRow
-        LIBSCREEN_SETCHAR_V 30
+        LIBSCREEN_SETCHAR_V ColorCursor
         rts
 ;===============================================================================
 gameMenuShieldColorNext
-
         inc shldColorIndex
         lda shldColorIndex
         cmp #11
         bcc gMSHNDone
         lda #0
         sta shldColorIndex
+
 gMSHNDone
         rts
 
 ;===============================================================================
 gameMenuModelPrevious
-
         lda playerFrameIndex
         bne gMMPDone
         lda #PlayerMaxModels
         sta playerFrameIndex
+
 gMMPDone
         dec playerFrameIndex
         rts
 
 ;===============================================================================
 gameMenuModelNext
-
         inc playerFrameIndex
         lda playerFrameIndex
         cmp #PlayerMaxModels
         bcc gMMNDone
         lda #0
         sta playerFrameIndex
+
 gMMNDone
         rts
 
 ;===============================================================================
 gameMenuModelReset
-
-        LIBSPRITE_STOPANIM_A          modelSprite
-        LIBSPRITE_ENABLE_AV           modelSprite, True
-        LIBSPRITE_MULTICOLORENABLE_AV modelSprite, True
-        LIBSPRITE_SETPOSITION_AAAA modelSprite, modelXHigh, modelXLow, modelY
-
+        LIBSPRITE_STOPANIM_A          playerSprite
+        LIBSPRITE_ENABLE_AV           playerSprite, True
+        LIBSPRITE_MULTICOLORENABLE_AV playerSprite, True
+        LIBSPRITE_SETPOSITION_AAAA playerSprite, modelXHigh, modelXLow, modelY
+        LIBSPRITE_SETPOSITION_AAAA shieldSprite, modelXHigh, modelXLow, modelY
+        jsr gamePlayerSetupShield
         rts
 
 ;===============================================================================
 gameMenuModelDisplay
-
-        ldx playerFrameIndex
-        lda playerFrameArray,X
-        sta playerFrame
-
-        LIBSPRITE_SETFRAME_AA         modelSprite, playerFrame
-
-        ldx shipColorIndex
-        lda menuColorArray,X
-        sta playerColor
-
-        LIBSPRITE_SETCOLOR_AA         modelSprite, playerColor
-
+        jsr gamePlayerLoadConfig
+        LIBSPRITE_SETFRAME_AA playerSprite, playerFrame
+        LIBSPRITE_SETCOLOR_AA playerSprite, playerColor
         ; Multiply index by 20 to have the offset (each name has 20 bytes)
         lda playerFrameIndex
         jsr gameflowMultiplyByTen       ; * 10
@@ -365,39 +397,73 @@ gameMenuModelDisplay
 
 ;===============================================================================
 gameMenuModelHide
-        LIBSPRITE_ENABLE_AV     modelSprite, False
+        LIBSPRITE_ENABLE_AV playerSprite, False
+        LIBSPRITE_ENABLE_AV shieldSprite, False
+        rts
+
+;===============================================================================
+gameMenuShieldDisplay
+        jsr gamePlayerLoadConfig
+        LIBSPRITE_SETCOLOR_AA shieldSprite, shieldColor
+        LIBSPRITE_ENABLE_AV   shieldSprite, True
         rts
 
 ;===============================================================================
 gameMenuSfxSwitch
-
-        lda soundEffectsDisabled
+        lda soundDisabled
         beq gMSSDisable
 
         lda #0
         jmp gMSSDone
+
 gMSSDisable
-
         lda #1
+
 gMSSDone
-
-        sta soundEffectsDisabled
-        jsr gameMenuSfxDisplay
-
+        sta soundDisabled
         rts
 
 ;===============================================================================
 gameMenuSfxDisplay
-
-        lda soundEffectsDisabled
+        lda soundDisabled
         bne gMSDDisabled
 
         LIBSCREEN_DRAWTEXT_AAAV sfxPosX, sfxPosY, sfxOn, LightGreen
         jmp gMSDDone
-gMSDDisabled
 
+gMSDDisabled
         LIBSCREEN_DRAWTEXT_AAAV sfxPosX, sfxPosY, sfxOff, LightRed
+
 gMSDDone
+        rts
+
+;===============================================================================
+gameMenuMusicSwitch
+        lda sidDisabled
+        beq gMMSDisable
+
+        lda #0
+        jmp gMMSDone
+
+gMMSDisable
+        lda #1
+
+gMMSDone
+        sta sidDisabled
+        rts
+
+;===============================================================================
+gameMenuMusicDisplay
+
+        lda sidDisabled
+        bne gMMDDisabled
+
+        LIBSCREEN_DRAWTEXT_AAAV musicPosX, musicPosY, sfxOn, LightGreen
+        jmp gMMDDone
+gMMDDisabled
+
+        LIBSCREEN_DRAWTEXT_AAAV musicPosX, musicPosY, sfxOff, LightRed
+gMMDDone
         rts
 
 ;===============================================================================
@@ -419,8 +485,8 @@ gMSVDone
 ;===============================================================================
 gameMenuRestore
 
-        LIBSCREEN_COPYMAPROW_VVA 12, 21, screenColumn
-        LIBSCREEN_COPYMAPROWCOLOR_VVA 12, 21, screenColumn
+        LIBSCREEN_COPYMAPROW_VVA 13, 21, screenColumn
+        LIBSCREEN_COPYMAPROWCOLOR_VVA 13, 21, screenColumn
 
         lda #False
         sta messageFlag

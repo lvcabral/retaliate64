@@ -2,7 +2,7 @@
 ;  gameStars.asm - Background star field control module
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
-;  Copyright (C) 2017 Dion Olsthoorn 
+;  Copyright (C) 2017 Dion Olsthoorn - <http://www.dionoidgames.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -10,7 +10,7 @@
 ;==============================================================================
 ; Constants
 
-StarsNumColumns         = 40
+StarsNumColumns         = 20
 Stars1stCharacter       = 72
 StarsNumFrames          = 8
 
@@ -55,6 +55,8 @@ gameStarsUpdate
 
         ; set the current X & Y chars
         stx starsCurrentX
+        asl starsCurrentX
+
         lda starsYCharArray,X
         sta starsCurrentY
 

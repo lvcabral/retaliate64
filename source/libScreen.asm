@@ -3,7 +3,7 @@
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
-;  Copyright (C) 2017 Dion Olsthoorn 
+;  Copyright (C) 2017 Dion Olsthoorn - <http://www.dionoidgames.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -182,10 +182,10 @@ defm    LIBSCREEN_DEBUG8BIT_VVA
         lda #White
         sta $0286       ; set text color
         lda #$20        ; space
-        jsr $ffd2       ; print 4 spaces
-        jsr $ffd2
-        jsr $ffd2
-        jsr $ffd2
+        jsr CHROUT      ; print 4 spaces
+        jsr CHROUT
+        jsr CHROUT
+        jsr CHROUT
         ;jsr $E566      ; reset cursor
         ldx #/2         ; Select row 
         ldy #/1         ; Select column 
@@ -207,10 +207,10 @@ defm    LIBSCREEN_DEBUG16BIT_VVAA
         lda #White
         sta $0286       ; set text color
         lda #$20        ; space
-        jsr $ffd2       ; print 4 spaces
-        jsr $ffd2
-        jsr $ffd2
-        jsr $ffd2
+        jsr CHROUT      ; print 4 spaces
+        jsr CHROUT
+        jsr CHROUT
+        jsr CHROUT
         ;jsr $E566      ; reset cursor
         ldx #/2         ; Select row 
         ldy #/1         ; Select column 
@@ -660,7 +660,7 @@ defm    LIBSCREEN_SET40COLUMNMODE
 ;==============================================================================
 
 defm    LIBSCREEN_SETCHARMEMORY  ; /1 = Character Memory Slot (Value)
-        ; point vic (lower 4 bits of $d018)to new character data
+        ; point vic (lower 4 bits of $D018)to new character data
         lda VMCSB
         and #%11110000 ; keep higher 4 bits
         ; p208 M Jong book
@@ -708,7 +708,7 @@ defm    LIBSCREEN_SETCHARPOSITION_AA    ; /1 = X Position 0-39 (Address)
 ;==============================================================================
 
 defm    LIBSCREEN_SETCOLORPOSITION_AA   ; /1 = X Position 0-39 (Address)
-                                ; /2 = Y Position 0-24 (Address)
+                                        ; /2 = Y Position 0-24 (Address)
                                
         ldy /2 ; load y position as index into list
         

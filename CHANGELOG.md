@@ -1,12 +1,30 @@
 ## Retaliate 64 Changelog
 
-##### v0.2.1 - 21-Jan-20178 - Freeze Hotfix
+##### v0.3 - 03-Feb-2018 - Final Beta - SID Music
+- Updated Splash bitmap to show 3 of the ship models
+- Added SID music support (using [Dion Olsthoorn library](http://www.dionoidgames.com))
+- Added SID music during game play ([Scout by Jeroen Tel](http://csdb.dk/sid/?id=28205))
+- Implemented support for NTSC on PAL music playback
+- Implemented new screen with Score Points and Game Control information
+- Implemented Game Pause (using space bar)
+- Added new Hangar title using sprites
+- Implemented support to select ship model with joystick on Hangar
+- Implemented shield activation (with joystick) on Hangar
+- Added option to disable music on Hangar
+- Added option to disable sfx and music during the game
+- Moved difficulty level selection to Hangar and added to saved data
+- Reduced number of stars to improve game performance
+- Improved performance of shield gauge display routing
+- Fixed shooter aliens "double round" issue on Hard mode at the end of waves
+- Reorganized game memory map (see [repo Wiki](https://github.com/lvcabral/retaliate64/wiki))
+
+##### v0.2.1 - 21-Jan-2018 - Freeze Hotfix
 
 - Fixed bug #1 - Hangar save option (F7) freezing the game
 - Fixed bug #2 - Key combination shift+C= scrambling the screen
 - Compressed prg with exomizer to speedup load time
 
-##### v0.2 - 18-Jan-20178 - Hangar Screen and Skill levels
+##### v0.2 - 18-Jan-2018 - Hangar Screen and Skill levels
 
 - Added 3 Difficulty Levels (Easy, Normal, Hard)
 - Added 4 new ship sprites (based on the original game)

@@ -28,7 +28,8 @@ spriteAnimsCurrent       byte 0
 spriteAnimsFrameCurrent  byte 0
 spriteAnimsEndFrameCurrent  byte 0
 
-spriteNumberMask  byte %00000001, %00000010, %00000100, %00001000, %00010000, %00100000, %01000000, %10000000
+spriteNumberMask  byte %00000001, %00000010, %00000100, %00001000
+                  byte %00010000, %00100000, %01000000, %10000000
 spriteLastCollision byte  0
 ;===============================================================================
 ; Macros/Subroutines
@@ -50,13 +51,33 @@ defm    LIBSPRITE_ENABLE_AV                ; /1 = Sprite Number (Address)
                                            ; /2 = Enable/Disable (Value)
         ldy /1
         lda spriteNumberMask,y
-        
+
         ldy #/2
         beq @disable
 @enable
         ora SPENA ; merge with the current SpriteEnable register
         sta SPENA ; set the new value into the SpriteEnable register
-        jmp @done 
+        jmp @done
+@disable
+        eor #$FF ; get mask compliment
+        and SPENA
+        sta SPENA
+@done
+        endm
+
+;===============================================================================
+
+defm    LIBSPRITE_ENABLE_AA                ; /1 = Sprite Number (Address)
+                                           ; /2 = Enable/Disable (Address)
+        ldy /1
+        lda spriteNumberMask,y
+
+        ldy /2
+        beq @disable
+@enable
+        ora SPENA ; merge with the current SpriteEnable register
+        sta SPENA ; set the new value into the SpriteEnable register
+        jmp @done
 @disable
         eor #$FF ; get mask compliment
         and SPENA
