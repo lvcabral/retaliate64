@@ -42,7 +42,8 @@ Open the [Changelog](https://github.com/lvcabral/retaliate64/blob/master/CHANGEL
 The next release will be the final 1.0 with support for multiplexed aliens, making the game playability closer to the original.
 As this feature requires me to study advanced topics, and refactoring the game code to use IRQ, it may take a little
 more time for me to release it, than I took for the first 3 beta versions.
-I'm not sure if I would be able to add an original SID music to the game, if someone would like to help please [contact me](https://twitter.com/lvcabral).
+~~I'm not sure if I would be able to add an original SID music to the game, if someone would like to help please contact me.~~
+I got a musician engaged on the project, the C64 community is awesome!
 
 ## How to Play the Game
 You can run the game on a real Commodore 64/128 or using an emulator, below the two methods:
