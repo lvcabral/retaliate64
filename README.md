@@ -5,7 +5,7 @@ Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (a
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong) to the Roku platform (streaming box/TV OS)
-I decided to work the other way around, this time creating a version of one of the most successful game for Roku, the arcade-style 
+I decided to work the other way around, this time creating a version of one of the most successful games for Roku, the arcade-style 
 space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate) to the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64).
 
 ### Game Concept
