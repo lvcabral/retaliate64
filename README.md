@@ -4,7 +4,7 @@ Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (a
 ![Retaliate Screens](http://lvcabral.com/images/C64/retaliate03-500x420.gif)
 
 ## Introduction
-After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong) to the Roku platform (streaming box/TV OS)
+After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong, Moon Patrol) to the Roku platform (streaming box/TV OS)
 I decided to work the other way around, this time, developing for the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64) a version of one of the most successful games for Roku, the arcade-style 
 space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate).
 
@@ -94,4 +94,4 @@ These are the books, music, tools and websites that are helping me to develop th
 - Prince of Persia for Roku: [Video](https://www.youtube.com/watch?v=gFOKxBuw66o&t=1s) - [Repo](https://github.com/lvcabral/Prince-of-Persia-Roku)
 - Lode Runner for Roku: [Video](https://www.youtube.com/watch?v=PizGMcdjIqQ&t=17s) - [Repo](https://github.com/lvcabral/Lode-Runner-Roku)
 - Donkey Kong for Roku: [Video](https://www.youtube.com/watch?v=NA59qZk7fQU) - Repo was taken down by Nintendo
-- Moon Patrol for Roku: [Video](https://www.youtube.com/watch?v=JNLBkOXiTQU) - Repo will be available soon
+- Moon Patrol for Roku: [Video](https://www.youtube.com/watch?v=JNLBkOXiTQU) - [Repo](https://github.com/lvcabral/Moon-Patrol-Roku)
