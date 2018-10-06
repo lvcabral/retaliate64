@@ -45,6 +45,11 @@ more time for me to release it, than I took for the first 3 beta versions.
 ~~I'm not sure if I would be able to add an original SID music to the game, if someone would like to help please contact me.~~
 I got a musician engaged on the project, the C64 community is awesome!
 
+### Update: October/2018
+As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer.
+
+The game is feature complete, and the release candidate is currently being beta tested by a small group and translated to other languages, the plan is to release around the 1 year anniversay of the project. Stay Tuned!
+
 ## How to Play the Game
 You can run the game on a real Commodore 64/128 or using an emulator, below the two methods:
 
