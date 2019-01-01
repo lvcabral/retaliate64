@@ -1,5 +1,5 @@
 # Retaliate for the Commodore 64
-Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (available on Roku & Android) for the Commodore 64
+Project to remake, using 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
 
 ### New Year's Update: 31-December-2018
 As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
