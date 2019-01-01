@@ -8,7 +8,7 @@ Now, exactly one year after this repository was launched, I'm happy to announce 
 
 We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics)! Check the teaser video below for a quick preview!
 
-[![Release Teaser](https://lvcabral.com/images/c64/youtube-play.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
+[![Release Teaser](https://lvcabral.com/images/c64/youtube-player.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong, Moon Patrol) to the Roku platform (streaming box/TV OS)
