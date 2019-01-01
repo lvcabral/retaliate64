@@ -1,12 +1,21 @@
 # Retaliate for the Commodore 64
 Project to remake, using 6502/6510 Assembly, the space shooter game Retaliate (available on Roku & Android)
 
-![Retaliate Screens](http://lvcabral.com/images/C64/retaliate03-500x420.gif)
+### New Year's Update: 31-December-2018
+As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
+
+Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
+
+We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics)! Check the teaser video below for a quick preview!
+
+[![Release Teaser](https://lvcabral.com/images/c64/youtube-play.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong, Moon Patrol) to the Roku platform (streaming box/TV OS)
 I decided to work the other way around, this time, developing for the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64) a version of one of the most successful games for Roku, the arcade-style 
 space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate).
+
+![Retaliate Screens](http://lvcabral.com/images/C64/retaliate03-500x420.gif)
 
 ### Game Concept
 Originally created by [Romans I XVI](https://www.romansixvigaming.com/) Retaliate has a unique concept, unlike the classic shooters (Space Invaders, Galaxian, Galaga)
@@ -38,17 +47,6 @@ You can see below a comparison of the ship sprites I created, based on the origi
 The current release (v0.3) is the last public Beta version and it brings a SID music during the game play, bug fixes, additional screen and settings.
 
 Open the [Changelog](https://github.com/lvcabral/retaliate64/blob/master/CHANGELOG.md) to check all the currently implemented features.
-
-The next release will be the final 1.0 with support for multiplexed aliens, making the game playability closer to the original.
-As this feature requires me to study advanced topics, and refactoring the game code to use IRQ, it may take a little
-more time for me to release it, than I took for the first 3 beta versions.
-~~I'm not sure if I would be able to add an original SID music to the game, if someone would like to help please contact me.~~
-I got a musician engaged on the project, the C64 community is awesome!
-
-### Update: October/2018
-As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer.
-
-The game is feature complete, and the release candidate is currently being beta tested by a small group and translated to other languages, the plan is to release around the 1 year anniversay of the project. Stay Tuned!
 
 ## How to Play the Game
 You can run the game on a real Commodore 64/128 or using an emulator, below the two methods:
