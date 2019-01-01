@@ -6,7 +6,9 @@ As I predicted, it took me a few months (nights and weekends) to study and be ab
 
 Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
 
-We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics)! Check the teaser video below for a quick preview!
+We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics). The "community edition" source-code will be released here, the same day the physical release, the only difference will be the graphics, for the community edition I will keep my own sprites.
+
+Check the teaser video below for a quick preview!
 
 [![Release Teaser](https://lvcabral.com/images/c64/youtube-player.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
 
