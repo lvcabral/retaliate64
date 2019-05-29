@@ -34,7 +34,7 @@ and If you also want to collaborate with the game, fork the project and send you
 
 I'm also adding techincal documentation (memory map etc.) on the [Wiki page of the project](https://github.com/lvcabral/retaliate64/wiki).
 
-## New Year's Update: 31-December-2018
+#### New Year's Update: 31-December-2018
 As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
 
 Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
