@@ -1,16 +1,10 @@
 # Retaliate for the Commodore 64
 Project to remake, using 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
 
-### New Year's Update: 31-December-2018
-As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
+### Spring Update: 28-May-2019
+I's official! [RGCD](http://www.rgcd.co.uk) announced, a couple of weeks ago, the release of **Retaliate DX** that will be available soon, click on the amazing opening screen, made by Jon Eggelton, to read about the release!
 
-Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
-
-We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics). The "community edition" source-code will be released here, the same day the physical release, the only difference will be the graphics, for the community edition I will keep my own sprites, but the implementation of all new features will be available here, including some intermediate releases, so you can see the progress I made during 2018. 
-
-Check the teaser video below for a quick preview!
-
-[![Release Teaser](https://lvcabral.com/images/c64/youtube-player.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
+[![Retaliate DX](https://4.bp.blogspot.com/-iy5HdunYrIY/XN223l6rTnI/AAAAAAAANVM/r6uqa9rPjUUV6snKgu9eWMAPw7vZkhgIACLcBGAs/s480/retal1.png)](https://www.rgcd.co.uk/2019/05/retaliate-dx-commodore-64.html)
 
 ## Introduction
 After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong, Moon Patrol) to the Roku platform (streaming box/TV OS)
@@ -39,6 +33,18 @@ If you found bugs or have any suggestions please go on and report those at the [
 and If you also want to collaborate with the game, fork the project and send your pull requests!
 
 I'm also adding techincal documentation (memory map etc.) on the [Wiki page of the project](https://github.com/lvcabral/retaliate64/wiki).
+
+## New Year's Update: 31-December-2018
+As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
+
+Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
+
+We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics). The "community edition" source-code will be released here, the same day the physical release, the only difference will be the graphics, for the community edition I will keep my own sprites, but the implementation of all new features will be available here, including some intermediate releases, so you can see the progress I made during 2018. 
+
+Check the teaser video below for a quick preview!
+
+[![Release Teaser](https://lvcabral.com/images/c64/youtube-player.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
+
 
 ### Features
 My main goal is to implement the functionality to reproduce (as much as possible) the original game mechanics and graphics. 
