@@ -100,9 +100,22 @@ These are the books, music, tools and websites that are helping me to develop th
 - [Dustlayer: Blog with C64 Tutorials by @actraiser](http://dustlayer.com/)
 - [Commodore 64 Resources by Peter Kofler](http://kofler.dot.at/c64/)
 
-## My Other Ports/Remakes
+## My Other Retro Game Ports/Remakes
 
 - Prince of Persia for Roku: [Video](https://www.youtube.com/watch?v=gFOKxBuw66o&t=1s) - [Repo](https://github.com/lvcabral/Prince-of-Persia-Roku)
 - Lode Runner for Roku: [Video](https://www.youtube.com/watch?v=PizGMcdjIqQ&t=17s) - [Repo](https://github.com/lvcabral/Lode-Runner-Roku)
 - Donkey Kong for Roku: [Video](https://www.youtube.com/watch?v=NA59qZk7fQU) - Repo was taken down by Nintendo
 - Moon Patrol for Roku: [Video](https://www.youtube.com/watch?v=JNLBkOXiTQU) - [Repo](https://github.com/lvcabral/Moon-Patrol-Roku)
+
+## My Other Links
+- My website is [https://lvcabral.com](https://lvcabral.com)
+- My twitter is [@lvcabral](https://twitter.com/lvcabral)
+- My podcast is [PODebug Podcast](http://podebug.com)
+- Check my other [GitHub repositories ](https://github.com/lvcabral)
+
+## Project License
+
+Copyright (C) Marcelo Lv Cabral. All rights reserved.
+
+Licensed under [MIT](https://github.com/lvcabral/retaliate64/blob/master/LICENSE) License.
+
