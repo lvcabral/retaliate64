@@ -2,7 +2,7 @@
 Project to remake, using 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
 
 ### Spring Update: 28-May-2019
-I's official! [RGCD](http://www.rgcd.co.uk) announced, a couple of weeks ago, the release of **Retaliate DX** that will be available soon! Stay tuned because as soon as the DX version is availale, I will upload to this repository the CE (Community Edition) that will have the same code, but with my original sprites and SFX. To know more about the DX release click on the amazing opening screen, made by Jon Eggelton!
+I's official! [RGCD](http://www.rgcd.co.uk) announced, a couple of weeks ago, the phyical release of **Retaliate DX** in cartridge, that will be available soon! Stay tuned because as soon as the DX version is availale, I will upload to this repository the CE (Community Edition) that will have the same code, but with my original sprites and SFX. To know more about the DX release click on the amazing opening screen, made by Jon Eggelton!
 
 [![Retaliate DX](https://4.bp.blogspot.com/-iy5HdunYrIY/XN223l6rTnI/AAAAAAAANVM/r6uqa9rPjUUV6snKgu9eWMAPw7vZkhgIACLcBGAs/s480/retal1.png)](https://www.rgcd.co.uk/2019/05/retaliate-dx-commodore-64.html)
 
