@@ -20,7 +20,8 @@ GAMEDATA        = $0340
 ; 1 byte for shield color
 ; 1 byte for disable sound effects
 ; 1 byte for disable music
-; 2 bytes for future use
+; 1 byte for dificulty level
+; 1 byte for future use
 ENDOFFILE       = $034A
 
 ;===============================================================================
@@ -83,7 +84,7 @@ gDLMusic
         sta sidDisabled
 gDLLevel
         lda GAMEDATA + 8
-        cmp #3
+        cmp #4
         bcs gDLReturn   ; Ignore if is invalid level
         sta levelNum
         jmp gDLReturn

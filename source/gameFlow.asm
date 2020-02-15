@@ -9,13 +9,18 @@
 ;===============================================================================
 ; Constants
 
-FlowNumLives    = 1
 FlowStateMenu   = 0
 FlowStateAlive  = 1
 FlowStateDying  = 2
 JoyStickDelay   = 10
 BarCharacter    = $50
 OneCharacter    = $31
+
+;===============================================================================
+; Page Zero
+
+time1           = $0B
+time2           = $0C
 
 ;===============================================================================
 ; Variables
@@ -27,11 +32,6 @@ score1          byte 0
 score2          byte 0
 score3          byte 0
 
-time1           byte 0
-time2           byte 0
-
-lives           byte 0
-
 flowHiScoreX    byte 24
 flowHiScoreNumX byte 0
 flowHiScoreY    byte 0
@@ -42,8 +42,8 @@ statsHiScore    byte 0
 
 flowGaugeX      byte 1
 flowGaugeOneX   byte 2
-flowGaugePctX   byte 4
 flowGaugeBarX   byte 5
+flowGaugeChrX   byte 0
 flowGaugeY      byte 24
 energy          byte 0
 lastEnergy      byte 0
@@ -69,14 +69,19 @@ flowAmmoText    text 'ammo:'
                 byte 0
 flowAmmoClear   dcb 8, SpaceCharacter
                 byte 0
+flowGaugeFull   text '100%'
+                byte 0
 flowGaugeTxt    byte $31, $00
 flowGaugePct    byte $25, $00
-flowGaugeBar    dcb 15, SpaceCharacter
+flowGaugeSpc    byte SpaceCharacter, $00
+flowGaugeChr    byte BarCharacter, $00
+flowGaugeBar    dcb 15, BarCharacter
                 byte 0
 flowGaugeClear  dcb 19, SpaceCharacter
                 byte 0
 flowPaused      byte 0
 flowState       byte FlowStateMenu
+flowDone        byte 1
 
 ;===============================================================================
 ; Jump Tables
@@ -154,7 +159,6 @@ gFUMDecScreenTimer
 gFUMShowStory
         lda #MenuStory
         sta screenColumn
-        jsr gameMenuModelHide
         jsr gameMenuShowLogo
         jmp gameMenuShowText
 
@@ -213,7 +217,7 @@ gFHJoyDown
         jmp gFHCheckKeys
 
 gFHHideShield
-        LIBSPRITE_ENABLE_AV shieldSprite, False
+        jmp gameMenuShielHide
 
 gFHCheckKeys
         dec flowJoystick
@@ -252,9 +256,6 @@ gFHNextModel
         jsr gameMenuModelNext
         jmp gFHModelDisplay
 
-gFHShowShield
-        jmp gameMenuShieldDisplay
-
 gFHShipColor
         jsr gameMenuShipColorNext
         jmp gFHModelDisplay
@@ -267,7 +268,6 @@ gFHLevel
         jsr gameMenuLevelChange
         jmp gameMenuLevelDisplay
 
-
 gFHMusicSwitch
         jsr gameMenuMusicSwitch
         jmp gameMenuMusicDisplay
@@ -277,8 +277,9 @@ gFHSfxSwitch
         jmp gameMenuSfxDisplay
 
 gFHSaveData
+        jsr gameMenuSavingDisplay
         jsr gameDataSave
-        jsr gameMenuSaveDisplay
+        jsr gameMenuSavedDisplay
         jmp gameFlowResetMsgTime
 
 gFHModelDisplay
@@ -290,19 +291,12 @@ gFHEnd
 
 ;===============================================================================
 gameFlowStartGame
-        jsr gameMenuClearText
-        jsr gameFlowShowGameStatus
 
-        ; reset
-        lda #MenuGameOver
-        sta screenColumn
-        lda #False
-        sta flowPaused
-        jsr gameFlowResetScore
-        jsr gameFlowResetLives
-        jsr gameAliensReset
-        jsr gamePlayerReset
-        jsr libMusicInit
+        ; set screen
+        jsr gameMenuClearText
+        jsr gameStarsScreen
+        jsr gameFlowInit
+        jsr gameFlowShowGameStatus
 
         ; set difficulty level
         ldx levelNum
@@ -312,6 +306,22 @@ gameFlowStartGame
         sta shieldSpeed
         lda aliensSpeedArray,X
         sta aliensSpeed
+        lda wavesTableLow,X
+        sta wavesFormationLow
+        lda wavesTableHigh,X
+        sta wavesFormationHigh
+
+        ; reset
+        lda #MenuGameOver
+        sta screenColumn
+        lda #False
+        sta flowPaused
+
+        jsr gameFlowResetScore
+        jsr gameFlowResetBullets
+        jsr gameAliensReset
+        jsr gamePlayerReset
+        jsr libMusicInit
 
         ; change state
         lda #FlowStateAlive
@@ -321,7 +331,7 @@ gameFlowStartGame
 
 ;===============================================================================
 gameFlowShowGameStatus
-        jsr gameflowShieldGaugeDisplay
+        jsr gameflowShieldGaugeFull
 
         LIBSCREEN_DRAWTEXT_AAAV flowAmmoX, flowAmmoY, flowAmmoText, White
         jsr gameflowBulletsDisplay
@@ -340,7 +350,6 @@ gameFlowUpdateAlive
         beq gFUAMusic
         cmp #KEY_S
         jsr gameMenuSfxSwitch
-        lda soundDisabled
         beq gFUAReturn
         jmp gFUADisable
 gFUAPause
@@ -350,10 +359,9 @@ gFUAPause
         jmp gFUAReturn
 gFUAPlay
         dec flowPaused
-        jmp gFUAReturn
+        jmp gFUADisable
 gFUAMusic
         jsr gameMenuMusicSwitch
-        lda sidDisabled
         beq gFUAReturn
 gFUADisable
         jsr libSoundInit
@@ -365,10 +373,7 @@ gameFlowUpdateDying
         LIBSPRITE_ISANIMPLAYING_A playerSprite
         bne gFUDEnd
 
-        lda lives
-        bne gFUDHasLives
-
-        jsr gameAliensWaveReset
+        jsr libMultiplexReset
         jsr gameFlowClearStatusLine
         jsr gameFlowResetGameOverTime
 
@@ -377,20 +382,6 @@ gameFlowUpdateDying
         sta flowState
         jsr gameMenuShowText
         jsr gameMenuShowStats
-
-        jmp gFUDEnd
-
-gFUDHasLives
-        LIBINPUT_GETFIREPRESSED
-        bne gFUDEnd
-
-        ; reset 
-        jsr gamePlayerReset
-
-        ; change state
-        lda #FlowStateAlive
-        sta flowState
-        
 gFUDEnd
         rts
 
@@ -556,19 +547,22 @@ gameFlowUpdateGauge
         adc shieldEnergy
         sta energy
         cld             ;clear decimal mode
+        lda shieldEnergy
         cmp lastEnergy
         beq gFUGDone
+        bcs gFUGHigher
         sta lastEnergy
-        jsr gameflowShieldGaugeDisplay
-
+        jsr gameflowShieldGaugeDecrease
+        jmp gFUGDone
+gFUGHigher
+        sta lastEnergy
+        beq gFUGDone
+        jsr gameflowShieldGaugeIncrease
 gFUGDone
         rts
 
 ;===============================================================================
-gameFlowResetLives
-
-        lda #FlowNumLives
-        sta lives
+gameFlowResetBullets
 
         lda #0
         sta bullets
@@ -578,6 +572,7 @@ gameFlowResetLives
         sta aliens2
 
         jsr gameflowBulletsDisplay
+        jsr gameBulletsReset
 
         rts
 
@@ -585,13 +580,7 @@ gameFlowResetLives
 gameFlowPlayerDied
 
         jsr gameBulletsReset ; stops in flight bullets from scoring
-
-        dec lives
-        bne gFPDHasLivesLeft 
-        
         jsr gameFlowUpdateHiScore
-
-gFPDHasLivesLeft
         jsr gameflowBulletsDisplay
 
         ; change state
@@ -676,50 +665,78 @@ gameflowBulletsDisplay
         rts
 
 ;===============================================================================
-gameflowShieldGaugeDisplay
+gameflowShieldGaugeFull
+        LIBSCREEN_DRAWTEXT_AAAV flowGaugeX, flowGaugeY, flowGaugeFull, White
+        LIBSCREEN_DRAWTEXT_AAAA flowGaugeBarX, flowGaugeY, flowGaugeBar, shieldColor
+        rts
+
+;===============================================================================
+gameflowShieldGaugeDecrease
         lda shieldEnergy
         cmp #ShieldMaxEnergy
-        bne gFSGDNoHundred
-
-        lda #OneCharacter
-        jmp gFSGDGauge
-
-gFSGDNoHundred
-        lda #SpaceCharacter
+        bcs gFSGDGauge
+        LIBSCREEN_DRAWTEXT_AAA flowGaugeX, flowGaugeY, flowGaugeSpc
 
 gFSGDGauge
-        sta flowGaugeTxt
-        LIBSCREEN_DRAWTEXT_AAAV flowGaugeX, flowGaugeY, flowGaugeTxt, White
-        LIBSCREEN_DRAWDECIMAL_AAAV flowGaugeOneX, flowGaugeY, energy, White
-        LIBSCREEN_DRAWTEXT_AAAV flowGaugePctX, flowGaugeY, flowGaugePct, White
+        LIBSCREEN_DRAWDECIMAL_AAA flowGaugeOneX, flowGaugeY, energy
 
-        ldx #0
-gFSGDLoop
-        stx flowGaugeCnt
-        inc flowGaugeCnt
-        lda flowGaugeCnt
-        jsr gameflowMultiplyByTen
-        cmp shieldEnergy
-        bcc gFSGDBar
-        lda #SpaceCharacter
-        jmp gFSGDDraw
+        lda shieldEnergy
+        jsr libMathDivideByTen
+        clc
+        adc flowGaugeBarX
+        sta flowGaugeChrX
 
-gFSGDBar
-        lda #BarCharacter
+        LIBSCREEN_DRAWTEXT_AAA flowGaugeChrX, flowGaugeY, flowGaugeSpc
 
-gFSGDDraw
-        sta flowGaugeBar,X
-        inx
-        cpx #15
-        bne gFSGDLoop
+        ldy shieldEnergy
+        cpy #50
+        bcs gFSGDReturn
 
         jsr gameflowSelectGaugeColor
-        LIBSCREEN_DRAWTEXT_AAAA flowGaugeBarX, flowGaugeY, flowGaugeBar, flowGaugeClr
+        LIBSCREEN_COLORTEXT_AAAV flowGaugeBarX, flowGaugeY, flowGaugeClr, 4
+
+gFSGDReturn
+        rts
+
+;===============================================================================
+gameflowShieldGaugeIncrease
+        lda shieldEnergy
+        cmp #ShieldMaxEnergy
+        bcc gFSGINoHundred
+
+        lda #OneCharacter
+        jmp gFSGIGauge
+
+gFSGINoHundred
+        lda #SpaceCharacter
+
+gFSGIGauge
+        sta flowGaugeTxt
+        LIBSCREEN_DRAWTEXT_AAA flowGaugeX, flowGaugeY, flowGaugeTxt
+        LIBSCREEN_DRAWDECIMAL_AAA flowGaugeOneX, flowGaugeY, energy
+
+        lda shieldEnergy
+        jsr libMathDivideByTen
+        beq gFSGIReturn
+        clc
+        adc flowGaugeBarX
+        sta flowGaugeChrX
+        dec flowGaugeChrX
+
+        LIBSCREEN_DRAWTEXT_AAAA flowGaugeChrX, flowGaugeY, flowGaugeChr, shieldColor
+
+        ldy shieldEnergy
+        cpy #50
+        bcs gFSGIReturn
+
+        jsr gameflowSelectGaugeColor
+        LIBSCREEN_COLORTEXT_AAAV flowGaugeBarX, flowGaugeY, flowGaugeClr, 4
+
+gFSGIReturn
         rts
 
 ;===============================================================================
 gameflowSelectGaugeColor
-        ldy shieldEnergy
         cpy #45         ; if shield is critically low change color to red
         bcc gFSGCRed
         lda shieldColor
@@ -733,16 +750,3 @@ gFSGCRed
 gFSGCDone
         rts
 
-;===============================================================================
-gameflowMultiplyByTen
-; Code from: http://codebase64.org/doku.php?id=base:multiplication_with_a_constant
-
-        sta ZeroPageTemp
-        asl              ; Shifting something left three times multiplies it by eight
-        asl 
-        asl  
-        asl ZeroPageTemp ; Shifting something left one time multiplies it by two
-        clc              ; Clear carry
-        adc ZeroPageTemp ; Add the two results together
-
-        rts

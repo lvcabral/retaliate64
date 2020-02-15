@@ -2,6 +2,7 @@
 ;  libMath.asm - Mathematics Macros
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
+;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -44,6 +45,24 @@ defm    LIBMATH_ADD8BIT_AVA
         lda /1  ; Get first number
         adc #/2 ; Add to second number
         sta /3  ; Store in sum
+        endm
+
+;==============================================================================
+
+defm    LIBMATH_ADD16BIT_VAVAAA
+                ; /1 = 1st Number High Byte (Value)
+                ; /2 = 1st Number Low Byte (Address)
+                ; /3 = 2nd Number High Byte (Value)
+                ; /4 = 2nd Number Low Byte (Address)
+                ; /5 = Sum High Byte (Address)
+                ; /6 = Sum Low Byte (Address)
+        clc     ; Clear carry before first add
+        lda /2  ; Get LSB of first number
+        adc /4  ; Add LSB of second number
+        sta /6  ; Store in LSB of sum
+        lda #/1 ; Get MSB of first number
+        adc #/3 ; Add carry and MSB of NUM2
+        sta /5  ; Store sum in MSB of sum
         endm
 
 ;==============================================================================
@@ -209,3 +228,34 @@ defm    LIBMATH_SUB16BIT_AAVVAA
         sbc #/3 ; Subtract borrow and MSB of NUM2
         sta /5  ; Store sum in MSB of sum
         endm
+
+;===============================================================================
+libMathMultiplyByTen
+; Code from: http://codebase64.org/doku.php?id=base:multiplication_with_a_constant
+
+        sta ZeroPageTemp
+        asl              ; Shifting something left three times multiplies it by eight
+        asl
+        asl
+        asl ZeroPageTemp ; Shifting something left one time multiplies it by two
+        clc              ; Clear carry
+        adc ZeroPageTemp ; Add the two results together
+
+        rts
+
+;===============================================================================
+libMathDivideByTen
+        lsr
+        sta  ZeroPageTemp
+        lsr
+        adc  ZeroPageTemp
+        ror
+        lsr
+        lsr
+        adc  ZeroPageTemp
+        ror
+        adc  ZeroPageTemp
+        ror
+        lsr
+        lsr
+        rts

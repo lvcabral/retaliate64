@@ -54,29 +54,33 @@ libMusicInit
 ;===============================================================================
 
 libMusicUpdate
-        ; Only play song during game play
-        lda playerActive
-        beq @sidReturn
-
+        ;inc EXTCOL
         ; Skip counter in PAL machines
         lda vicMode
-        bne sidPlayStart
+        bne lMUPlayMusic
 
         ; Decrease play rate in 20% for NTSC
         lda sidCounter
-        beq @sidSkip
+        beq lMUSkip
         dec sidCounter
-        jmp sidPlayStart
-@sidSkip
+lMUPlayMusic
+        ; Only play mixed if SFX is enabled
+        lda soundDisabled
+        beq sidPlayMixed
+        jsr SIDPLAY
+        ;dec EXTCOL
+        rts
+lMUSkip
         lda #5
         sta sidCounter
-@sidReturn
+        ;dec EXTCOL
         rts
-
-sidPlayStart
+sidPlayMixed
+        ;inc EXTCOL
         ; Push current ROM/RAM setup to stack
         lda $01
         pha
+        sei
         ; Switch to RAM only
         lda #$34
         sta $01
@@ -96,7 +100,8 @@ sidPlayStart
         ; Switch back to previous RAM/ROM setup
         pla
         sta $01
-
+        cli
+        ;inc EXTCOL
         ; check soundVoiceActive (libSound) to see which SID voices are active
         ; only write registers from sidRegisterBuffer back to $d400-$d418 
         ; for voices that aren't already playing a sound effect
@@ -131,6 +136,7 @@ checkvoicedone
 
         ; copy Filter and Volume registers
         LIBMUSIC_RESTORE_REGISTERS_VVA 21, 24, sidRegisterBuffer
+        ;inc EXTCOL
         rts
 
 ;===============================================================================

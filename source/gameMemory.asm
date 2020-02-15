@@ -11,8 +11,15 @@
  
                 ; $00-$01   Reserved for IO
 ZeroPageTemp    = $02
-                ; $03-$8F   Reserved for BASIC
-                ; using $73-$8A CHRGET as BASIC not used for our game
+                ; $03-$8F   Reserved for BASIC  (disabled)
+                ; $03-$08   Used on libMultiplex.asm
+                ; $09-$0A   Used on libSprite.asm
+                ; $0B-$0C   Used on gameFlow.asm
+                ; $10-$11   Used on gameWaves.asm
+                ; $20-$26   Used on gameAliens.asm
+                ; $31-$36   Used on gamePlayer.asm
+                ; $40-$51   Used on libMultiplex.asm
+                ; $73-$7D   Temporary variables for libraries
 ZeroPageParam1  = $73
 ZeroPageParam2  = $74
 ZeroPageParam3  = $75
@@ -22,9 +29,13 @@ ZeroPageParam6  = $78
 ZeroPageParam7  = $79
 ZeroPageParam8  = $7A
 ZeroPageParam9  = $7B
-ZeroPageTemp1   = $80
-ZeroPageTemp2   = $81
+ZeroPageTemp1   = $7C
+ZeroPageTemp2   = $7D
+                ; $7E-$8C   Used on gameBullets.asm
                 ; $90-$FA   Reserved for Kernal
+                ; $E0-$E5   Used on gameStars.asm
+                ; $EE       Used on gameStars.asm
+                ; $F8-$F9   Used on gameStars.asm
 ZeroPageLow     = $FB
 ZeroPageHigh    = $FC
 ZeroPageLow2    = $FD
@@ -34,6 +45,10 @@ ZeroPageHigh2   = $FE
 ;===============================================================================
 ; $0100-$01FF  STACK (256 bytes)
 
+MODE            = $0291
+CINVLOW         = $0314
+CINVHIGH        = $0315
+ISTOP           = $0328
 
 ;===============================================================================
 ; $0200-$9FFF  RAM (40K)
@@ -57,10 +72,11 @@ SPRITERAM       = 176
 ; The character set ($D018) pointing to 14 decimal (%xxxx101x)
 ; So charmem is at $3800 adding bank start $4000 we have $7800
 CHARSETPOS      = 14
+CHARSETRAM      = $7800
 * = $7800
         ; letters and numbers from the font "Teggst shower 5"
         ; http://kofler.dot.at/c64/download/teggst_shower_5.zip
-        incbin "characters.cst",0,102
+        incbin "characters.cst",0,168
 
 ; Menu screens
 * = $8000
@@ -68,21 +84,27 @@ MAPRAM
         ; Export List: 1-5(9),1-5(10),1-5(11),1-5(12),1-5(13),1-5(14),1-5(15),1-5(16),1-5(17),1-5(18),1-5(19),1-5(20),1-5(21),1-5(22),1-5(24)
         incbin "screens.bin"
 
+; Stars field cache
+CACHERAM       = $9800
+CLRCHRAM       = $9C00
+
 ;===============================================================================
-; $A000-$BFFF  BASIC ROM (8K)
+; $A000-$BFFF  BASIC ROM (8K) - Disabled for this game
+; Aliens Wave data is placed here by using *=$A000 directive on gameWaves.asm
 
 ;===============================================================================
 ; $C000-$CFFF  RAM (4K)
 
+; SFX
+SoundVoice = $01
+
 ; SID music
 SIDINIT = $C000
-SIDPLAY = $C006
+SIDPLAY = $C003
 SIDSONG = $00   ; Id of the song (inside the SID file)
 
 * = $C000
 SIDLOAD
-        ; Music: Scout (c)1988 by Jeroen Tel
-        ; http://csdb.dk/sid/?id=28205
         incbin "music.sid", $7E
 
 ;===============================================================================
@@ -100,6 +122,8 @@ RASTER          = $D012
 SPENA           = $D015
 SCROLX          = $D016
 VMCSB           = $D018
+IRQFLAG         = $D019
+IRQCTRL         = $D01A
 SPBGPR          = $D01B
 SPMC            = $D01C
 SPSPCL          = $D01E
@@ -136,11 +160,16 @@ SIGVOL          = $D418 ;(54296)
 COLORRAM        = $D800
 CIAPRA          = $DC00
 CIAPRB          = $DC01
+CIAICR          = $DC0D
+CI2PRA          = $DD00
+CI2ICR          = $DD0D
 
 ;===============================================================================
 ; $E000-$FFFF  KERNAL ROM (8K)
 
 ; Kernal Subroutines
+IRQCONTINUE     = $EA81
+IRQFINISH       = $EA31
 SCNKEY          = $FF9F
 GETIN           = $FFE4
 CLOSE           = $FFC3
@@ -151,5 +180,6 @@ CLRCHN          = $FFCC
 CHROUT          = $FFD2
 LOAD            = $FFD5
 SAVE            = $FFD8
+RDTIM           = $FFDE
 
 ;===============================================================================

@@ -22,6 +22,11 @@ GameOverTime = 5
 LevelEasy    = 0
 LevelNormal  = 1
 LevelHard    = 2
+LevelExtreme = 3
+
+LogoYPos     = 77
+ModelXPos    = 228
+ModelYPos    = 147
 
 ColorCursor  = 92
 
@@ -86,32 +91,34 @@ Operator HiLo
 menuDisplayed   byte   0
 menuTimer       byte   0
 
-logoXHighArray  byte   0,   0,   0,   0,   0,   0,   0
-logoXHigh       byte   0
-logoXLowArray   byte 100, 124, 148, 172, 196, 220, 244
-logoXLow        byte   0
-logoYArray      byte  77,  77,  77,  77,  77,  77,  77
-logoY           byte   0
+logoXArray      byte  100
+hangarXArray    byte  124, 148, 172, 196, 220, 244
+logoX           byte   0
+hangarX         byte   0
+hideY           byte 255
 logoXChar       byte   0
 logoXOffset     byte   0
 logoYOffset     byte   0
 logoYChar       byte   0
 logoSprite      byte   0
 logoFrame       byte   0
-logoFlag        byte   0
 
 levelNum        byte LevelNormal
-levelEasyText   text 'easy  '
+levelEasyText   text 'easy   '
                 byte 0
-levelNormalText text 'normal'
+levelNormalText text 'normal '
                 byte 0
-levelHardText   text 'hard  '
+levelHardText   text 'hard   '
+                byte 0
+levelXtremeText text 'extreme'
                 byte 0
 levelPosX       byte 18
 levelPosY       byte 21
 
 msgPosX         byte 1
 msgPosY         byte 21
+menuSaving      text '           saving on disk...          '
+                byte 0
 menuSaveOK      text '    high score and settings saved     '
                 byte 0
 menuSaveError   text ' error saving high score and settings '
@@ -140,9 +147,8 @@ modelNames      text '   old faithful    '
                 byte 0
                 text 'ruthless retaliator'
                 byte 0
-modelXHigh      byte 0
-modelXLow       byte 228
-modelY          byte 147
+modelX          byte ModelXPos
+modelY          byte ModelYPos
 modelNamePosX   byte 18
 modelNamePosY   byte 17
 
@@ -171,109 +177,94 @@ statsMsgHigh    text '     new high score, great job!     '
 ; Macros/Subroutines
 
 gameMenuShowLogo
-        ldx #0
-        stx logoSprite
         lda #19
         sta logoFrame
+        ldx #0
+        stx logoSprite
 
 gMSLLoop
-        inc logoSprite ; x+1
-
-        lda logoXHighArray,X
-        sta logoXHigh
-        lda logoXLowArray,X
-        sta logoXLow
-        lda logoYArray,X
-        sta logoY
+        lda logoXArray,X
+        sta logoX
 
         jsr gameMenuLogoSetup
         jsr gameMenuLogoUpdate
 
-        LIBSPRITE_ENABLE_AV logoSprite, True
-
         ; loop for each frame
+        inc logoSprite
         inc logoFrame
         inx
         cpx #7
-        bne gMSLLoop
+        bcc gMSLLoop
 
         rts
 
 ;===============================================================================
 gameMenuShowHangar
-        ldx #0
-        stx logoSprite
         lda #30
         sta logoFrame
+        ldx #0
+        stx logoSprite
 
 gMSHLoop
         inc logoSprite ; x+1
-        cpx #5
-        bcc gMSHShow
-        lda #False
-        sta logoFlag
-        jmp gMSHNext
-gMSHShow
-        lda #True
-        sta logoFlag
-        lda logoXHighArray,X+1
-        sta logoXHigh
-        lda logoXLowArray,X+1
-        sta logoXLow
-        lda logoYArray,X
-        sta logoY
+
+        lda hangarXArray,X
+        sta logoX
 
         jsr gameMenuLogoSetup
         jsr gameMenuLogoUpdate
 
-gMSHNext
-        LIBSPRITE_ENABLE_AA logoSprite, logoFlag
         ; loop for each frame
         inc logoFrame
         inx
-        cpx #7
-        bne gMSHLoop
-
+        cpx #5
+        bcc gMSHLoop
+        inc logoSprite
+        lda logoSprite
+        sta playerSprite
+        lda #ModelYPos-1
+        sta shieldY
         rts
 
 ;===============================================================================
 gameMenuLogoSetup
-        LIBSPRITE_STOPANIM_A          logoSprite
-        LIBSPRITE_SETFRAME_AA         logoSprite, logoFrame
-        LIBSPRITE_SETCOLOR_AV         logoSprite, LightBlue
-        LIBSPRITE_MULTICOLORENABLE_AV logoSprite, True
+        LIBSPRITE_STOPANIM_A         logoSprite
+        LIBMPLEX_SETPRIORITY_AV      logoSprite, False
+        LIBMPLEX_MULTICOLORENABLE_AV logoSprite, True
         rts
 
 ;===============================================================================
 gameMenuLogoUpdate
-        LIBSPRITE_SETPRIORITY_AV      logoSprite, False
-        LIBSPRITE_SETPOSITION_AAAA logoSprite, logoXHigh, logoXLow, logoY
-        LIBSCREEN_PIXELTOCHAR_AAVAVAAAA logoXHigh, logoXLow, 12, logoY, 40, logoXChar, logoXOffset, logoYChar, logoYOffset
+        LIBMPLEX_SETFRAME_AA         logoSprite, logoFrame
+        LIBMPLEX_SETCOLOR_AV         logoSprite, LightBlue
+        LIBMPLEX_SETPOSITION_AAAA    logoSprite, #0, logoX, #LogoYPos
         rts
 
 ;===============================================================================
 gameMenuShowText
+        jsr gameStarsScreen
+        jsr gameFlowInit
         lda #True
         sta menuDisplayed
-
+        sei
         ; screen text
 repeat 0, 13, idx
-        LIBSCREEN_COPYMAPROW_VVA  idx,  idx + 8, screenColumn
+        LIBSCREEN_COPYMAPROW_VVA  idx, idx + 8, screenColumn
 endrepeat
         LIBSCREEN_COPYMAPROW_VVA 14, 23, screenColumn
 
         ; screen colors
 repeat 0, 13, idx
-        LIBSCREEN_COPYMAPROWCOLOR_VVA  idx,  idx + 8, screenColumn
+        LIBSCREEN_COPYMAPROWCOLOR_VVA  idx, idx + 8, screenColumn
 endrepeat
         LIBSCREEN_COPYMAPROWCOLOR_VVA 14, 23, screenColumn
-
+        cli
         rts
 
 ;===============================================================================
 gameMenuLevelChange
         lda levelNum
-        cmp #LevelHard
+        cmp #LevelExtreme
         beq gMLCEasy
         inc levelNum
         jmp gMLCDone
@@ -288,24 +279,31 @@ gMLCDone
 ;===============================================================================
 gameMenuLevelDisplay
         lda levelNum
+        cmp #LevelExtreme
+        beq gameMenuLevelShowExtreme
         cmp #LevelHard
-        beq gMCDHard
+        beq gameMenuLevelShowHard
         cmp #LevelNormal
-        beq gMCDNormal
-        jmp gMCDEasy
+        beq gMLDNormal
+        jmp gameMenuLevelShowEasy
+gMLDNormal
+        jmp gameMenuLevelShowNormal
 
-gMCDHard
+;===============================================================================
+gameMenuLevelShowExtreme
+        LIBSCREEN_DRAWTEXT_AAAV levelPosX, levelPosY, levelXtremeText, Purple
+        rts
+
+gameMenuLevelShowHard
         LIBSCREEN_DRAWTEXT_AAAV levelPosX, levelPosY, levelHardText, LightRed
-        jmp gMCDDone
+        rts
 
-gMCDNormal
+gameMenuLevelShowNormal
         LIBSCREEN_DRAWTEXT_AAAV levelPosX, levelPosY, levelNormalText, LightBlue
-        jmp gMCDDone
+        rts
 
-gMCDEasy
+gameMenuLevelShowEasy
         LIBSCREEN_DRAWTEXT_AAAV levelPosX, levelPosY, levelEasyText, Cyan
-
-gMCDDone
         rts
 
 ;===============================================================================
@@ -373,39 +371,40 @@ gMMNDone
 
 ;===============================================================================
 gameMenuModelReset
-        LIBSPRITE_STOPANIM_A          playerSprite
-        LIBSPRITE_ENABLE_AV           playerSprite, True
-        LIBSPRITE_MULTICOLORENABLE_AV playerSprite, True
-        LIBSPRITE_SETPOSITION_AAAA playerSprite, modelXHigh, modelXLow, modelY
-        LIBSPRITE_SETPOSITION_AAAA shieldSprite, modelXHigh, modelXLow, modelY
+        LIBSPRITE_STOPANIM_A     playerSprite
+        LIBMPLEX_SETPOSITION_AAAA playerSprite, #0, modelX, modelY
+        LIBMPLEX_SETPOSITION_AAAA shieldSprite, #0, modelX, hideY
         jsr gamePlayerSetupShield
         rts
 
 ;===============================================================================
 gameMenuModelDisplay
         jsr gamePlayerLoadConfig
-        LIBSPRITE_SETFRAME_AA playerSprite, playerFrame
-        LIBSPRITE_SETCOLOR_AA playerSprite, playerColor
+        LIBMPLEX_SETFRAME_AA playerSprite, playerFrame
+        LIBMPLEX_SETCOLOR_AA playerSprite, playerColor
         ; Multiply index by 20 to have the offset (each name has 20 bytes)
         lda playerFrameIndex
-        jsr gameflowMultiplyByTen       ; * 10
-        asl                             ; * 2
+        jsr libMathMultiplyByTen       ; * 10
+        asl                            ; * 2
         sta modelNameOffset
         ; Draw the ship name with the offset
         LIBSCREEN_DRAWTEXT_AAAAV modelNamePosX, modelNamePosY, modelNames, modelNameOffset, White
         rts
 
 ;===============================================================================
-gameMenuModelHide
-        LIBSPRITE_ENABLE_AV playerSprite, False
-        LIBSPRITE_ENABLE_AV shieldSprite, False
+gameMenuShieldDisplay
+        jsr gamePlayerLoadConfig
+        LIBMPLEX_SETCOLOR_AA shieldSprite, shieldColor
+        LIBMPLEX_SETPOSITION_AAAA shieldSprite, #0, modelX, shieldY
+        lda #True
+        sta shieldActive
         rts
 
 ;===============================================================================
-gameMenuShieldDisplay
-        jsr gamePlayerLoadConfig
-        LIBSPRITE_SETCOLOR_AA shieldSprite, shieldColor
-        LIBSPRITE_ENABLE_AV   shieldSprite, True
+gameMenuShielHide
+        LIBMPLEX_SETPOSITION_AAAA shieldSprite, #0, modelX, hideY
+        lda #False
+        sta shieldActive
         rts
 
 ;===============================================================================
@@ -467,7 +466,13 @@ gMMDDone
         rts
 
 ;===============================================================================
-gameMenuSaveDisplay
+gameMenuSavingDisplay
+
+        LIBSCREEN_DRAWTEXT_AAAV msgPosX, msgPosY, menuSaving, Yellow
+        rts
+
+;===============================================================================
+gameMenuSavedDisplay
 
         lda diskErrorFlag
         bne gMSVError
@@ -484,7 +489,7 @@ gMSVDone
 
 ;===============================================================================
 gameMenuRestore
-
+        GAMESTARS_COPYMAPROW_V 21
         LIBSCREEN_COPYMAPROW_VVA 13, 21, screenColumn
         LIBSCREEN_COPYMAPROWCOLOR_VVA 13, 21, screenColumn
 

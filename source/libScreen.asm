@@ -90,26 +90,26 @@ screenScrollXValue byte 0
 ;===============================================================================
 ; Macros/Subroutines
 
-defm    LIBSCREEN_COPYMAPROW_VVA        ; /1 = Map Row          (Value)
-                                        ; /2 = Screen Row       (Value)
-                                        ; /3 = Start Offset     (Address)
-        lda #/1
-        sta ZeroPageParam1
+defm    LIBSCREEN_COPYMAPROW_VVA  ; /1 = Map Row          (Value)
+                                  ; /2 = Screen Row       (Value)
+                                  ; /3 = Start Offset     (Address)
+
+        ldy #/1                   ; load y position as index into list
         lda #/2
         sta ZeroPageParam2
         lda /3
         sta ZeroPageParam3
+
+        lda MapRAMRowStartLow,Y   ; load low address byte
+        sta ZeroPageLow2
+        lda MapRAMRowStartHigh,Y  ; load high address byte
+        sta ZeroPageHigh2
+
         jsr libScreen_CopyMapRow
 
         endm
 
 libScreen_CopyMapRow
-
-        ldy ZeroPageParam1 ; load y position as index into list
-        lda MapRAMRowStartLow,Y ; load low address byte
-        sta ZeroPageLow2
-        lda MapRAMRowStartHigh,Y ; load high address byte
-        sta ZeroPageHigh2
 
         ; add on the offset to the map address
         LIBMATH_ADD16BIT_AAVAAA ZeroPageHigh2, ZeroPageLow2, 0, ZeroPageParam3, ZeroPageHigh2, ZeroPageLow2
@@ -123,7 +123,10 @@ libScreen_CopyMapRow
         ldy #0
 lSCMRLoop
         lda (ZeroPageLow2),y
+        cmp #SpaceCharacter
+        beq lSCMRSkip
         sta (ZeroPageLow),y
+lSCMRSkip
         iny
         cpy #40
         bne lSCMRLoop
@@ -165,7 +168,9 @@ libScreen_CopyMapRowColor
         ldy #0
 lSCMRCLoop
         lda (ZeroPageLow2),y
+        beq lSCMRCSkip
         sta (ZeroPageLow),y
+lSCMRCSkip
         iny
         cpy #40
         bne lSCMRCLoop
@@ -218,7 +223,36 @@ defm    LIBSCREEN_DEBUG16BIT_VVAA
 
         lda /3
         ldx /4
+
         jsr $BDCD       ; print number
+        endm
+
+;==============================================================================
+
+defm    LIBSCREEN_DRAWTEXT_AAA ; /1 = X Position 0-39 (Address)
+                               ; /2 = Y Position 0-24 (Address)
+                               ; /3 = 0 terminated string (Address)
+
+        ldy /2 ; load y position as index into list
+
+        lda ScreenRAMRowStartLow,Y ; load low address byte
+        sta ZeroPageLow
+
+        lda ScreenRAMRowStartHigh,Y ; load high address byte
+        sta ZeroPageHigh
+
+        ldy /1 ; load x position into Y register
+
+        ldx #0
+@loop   lda /3,X
+        cmp #0
+        beq @done
+        sta (ZeroPageLow),Y
+        inx
+        iny
+        jmp @loop
+@done
+
         endm
 
 ;==============================================================================
@@ -372,6 +406,35 @@ defm    LIBSCREEN_DRAWTEXT_AAAA ; /1 = X Position 0-39 (Address)
 
         endm
 
+;==============================================================================
+
+defm    LIBSCREEN_COLORTEXT_AAAV ; /1 = X Position 0-39 (Address)
+                                 ; /2 = Y Position 0-24 (Address)
+                                 ; /3 = Text Color (Address)
+                                 ; /4 = Number of characters to color
+
+        ldy /2 ; load y position as index into list
+
+        lda ColorRAMRowStartLow,Y ; load low address byte
+        sta ZeroPageLow
+
+        lda ColorRAMRowStartHigh,Y ; load high address byte
+        sta ZeroPageHigh
+
+        ldy /1 ; load x position into Y register
+
+        ldx #0
+@loop   cpx #/4
+        beq @done
+        lda /3
+        sta (ZeroPageLow),Y
+        inx
+        iny
+        jmp @loop
+@done
+
+        endm
+
 ;===============================================================================
 
 defm    LIBSCREEN_DRAWDECIMAL_AAAV ; /1 = X Position 0-39 (Address)
@@ -380,7 +443,7 @@ defm    LIBSCREEN_DRAWDECIMAL_AAAV ; /1 = X Position 0-39 (Address)
                                    ; /4 = Text Color (Value)
 
         ldy /2 ; load y position as index into list
-        
+
         lda ScreenRAMRowStartLow,Y ; load low address byte
         sta ZeroPageLow
 
@@ -392,7 +455,7 @@ defm    LIBSCREEN_DRAWDECIMAL_AAAV ; /1 = X Position 0-39 (Address)
         ; get high nybble
         lda /3
         and #$F0
-        
+
         ; convert to ascii
         lsr
         lsr
@@ -403,14 +466,14 @@ defm    LIBSCREEN_DRAWDECIMAL_AAAV ; /1 = X Position 0-39 (Address)
         sta (ZeroPageLow),Y
 
         ; move along to next screen position
-        iny 
+        iny
 
         ; get low nybble
         lda /3
         and #$0F
 
         ; convert to ascii
-        ora #$30  
+        ora #$30
 
         sta (ZeroPageLow),Y
     
@@ -431,27 +494,64 @@ defm    LIBSCREEN_DRAWDECIMAL_AAAV ; /1 = X Position 0-39 (Address)
 
         ; move along to next screen position
         iny 
-        
+
+        sta (ZeroPageLow),Y
+
+        endm
+
+;===============================================================================
+
+defm    LIBSCREEN_DRAWDECIMAL_AAA ; /1 = X Position 0-39 (Address)
+                                  ; /2 = Y Position 0-24 (Address)
+                                  ; /3 = decimal number 2 nybbles (Address)
+
+        ldy /2 ; load y position as index into list
+
+        lda ScreenRAMRowStartLow,Y ; load low address byte
+        sta ZeroPageLow
+
+        lda ScreenRAMRowStartHigh,Y ; load high address byte
+        sta ZeroPageHigh
+
+        ldy /1 ; load x position into Y register
+
+        ; get high nybble
+        lda /3
+        and #$F0
+
+        ; convert to ascii
+        lsr
+        lsr
+        lsr
+        lsr
+        ora #$30
+
+        sta (ZeroPageLow),Y
+
+        ; move along to next screen position
+        iny
+
+        ; get low nybble
+        lda /3
+        and #$0F
+
+        ; convert to ascii
+        ora #$30
+
         sta (ZeroPageLow),Y
 
         endm
 
 ;==============================================================================
 
-defm    LIBSCREEN_GETCHAR  ; /1 = Return character code (Address)
+defm    LIBSCREEN_GETCHAR_A  ; /1 = Return character code (Address)
         lda (ZeroPageLow),Y
         sta /1
         endm
 
 ;===============================================================================
 
-defm    LIBSCREEN_GETCHAR_ACC ;  return character code in Accumulator
-        lda (ZeroPageLow),Y
-        endm
-
-;===============================================================================
-
-defm    LIBSCREEN_PIXELTOCHAR_AAVAVAAAA
+defm    LIBSCREEN_PIXELTOCHAR_AAVAVAAA
                                 ; /1 = XHighPixels      (Address)
                                 ; /2 = XLowPixels       (Address)
                                 ; /3 = XAdjust          (Value)
@@ -460,9 +560,7 @@ defm    LIBSCREEN_PIXELTOCHAR_AAVAVAAAA
                                 ; /6 = XChar            (Address)
                                 ; /7 = XOffset          (Address)
                                 ; /8 = YChar            (Address)
-                                ; /9 = YOffset          (Address)
                                 
-
         lda /1
         sta ZeroPageParam1
         lda /2
@@ -482,8 +580,6 @@ defm    LIBSCREEN_PIXELTOCHAR_AAVAVAAAA
         sta /7
         lda ZeroPageParam8
         sta /8
-        lda ZeroPageParam9
-        sta /9
 
         endm
 
@@ -523,11 +619,6 @@ libScreen_PixelToChar
         lsr A ; and again = /4
         lsr A ; and again = /8
         sta ZeroPageParam8
-
-        ; AND 7 to get pixel offset Y
-        lda ZeroPageParam9
-        and #7
-        sta ZeroPageParam9
 
         rts
 
@@ -691,7 +782,7 @@ defm    LIBSCREEN_SETCHAR_ACC  ; char in Accumulator
 ;==============================================================================
 
 defm    LIBSCREEN_SETCHARPOSITION_AA    ; /1 = X Position 0-39 (Address)
-                                ; /2 = Y Position 0-24 (Address)
+                                        ; /2 = Y Position 0-24 (Address)
         
         ldy /2 ; load y position as index into list
         
@@ -764,5 +855,3 @@ defm    LIBSCREEN_WAIT_V        ; /1 = Scanline (Value)
         bne @loop               ; Loop if raster line not reached 255
 
         endm
-
-

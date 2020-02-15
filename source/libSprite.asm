@@ -1,5 +1,5 @@
 ;===============================================================================
-;  libScreen.asm - VIC II Screen related Macros
+;  libSprite.asm - VIC II Sprite related Macros and Routines
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
 ;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
@@ -10,27 +10,35 @@
 ;===============================================================================
 ; Constants
 
-SpriteAnimsMax = 8
+SpriteAnimsMax = MAXSPR
+
+;===============================================================================
+; Page Zero
+
+shieldOrder     = $09
+playerOrder     = $0A
 
 ;===============================================================================
 ; Variables
 
-spriteAnimsActive       dcb SpriteAnimsMax, 0
-spriteAnimsStartFrame   dcb SpriteAnimsMax, 0
-spriteAnimsFrame        dcb SpriteAnimsMax, 0
-spriteAnimsEndFrame     dcb SpriteAnimsMax, 0
-spriteAnimsStopFrame    dcb SpriteAnimsMax, 0
-spriteAnimsSpeed        dcb SpriteAnimsMax, 0
-spriteAnimsDelay        dcb SpriteAnimsMax, 0
-spriteAnimsLoop         dcb SpriteAnimsMax, 0
+spriteAnimsActive          dcb SpriteAnimsMax, 0
+spriteAnimsStartFrame      dcb SpriteAnimsMax, 0
+spriteAnimsFrame           dcb SpriteAnimsMax, 0
+spriteAnimsEndFrame        dcb SpriteAnimsMax, 0
+spriteAnimsStopFrame       dcb SpriteAnimsMax, 0
+spriteAnimsSpeed           dcb SpriteAnimsMax, 0
+spriteAnimsDelay           dcb SpriteAnimsMax, 0
+spriteAnimsLoop            dcb SpriteAnimsMax, 0
 
-spriteAnimsCurrent       byte 0
-spriteAnimsFrameCurrent  byte 0
-spriteAnimsEndFrameCurrent  byte 0
+spriteNumberMask           byte %00000001, %00000010, %00000100, %00001000
+                           byte %00010000, %00100000, %01000000, %10000000
 
-spriteNumberMask  byte %00000001, %00000010, %00000100, %00001000
-                  byte %00010000, %00100000, %01000000, %10000000
-spriteLastCollision byte  0
+spriteAnimsCurrent         byte 0
+spriteAnimsFrameCurrent    byte 0
+spriteAnimsEndFrameCurrent byte 0
+
+spriteLastCollision        byte 0
+
 ;===============================================================================
 ; Macros/Subroutines
 
@@ -339,61 +347,110 @@ defm    LIBSPRITE_STOPANIM_A            ; /1 = Sprite Number    (Address)
 ;==============================================================================
 
 libSpritesUpdate
-
         ldx #0
+
 lSoULoop
         ; skip this sprite anim if not active
-        lda spriteAnimsActive,X
+        lda spriteAnimsActive,x
         bne lSoUActive
         jmp lSoUSkip
-lSoUActive
 
+lSoUActive
         stx spriteAnimsCurrent
-        lda spriteAnimsFrame,X
+        lda spriteAnimsFrame,x
         sta spriteAnimsFrameCurrent
 
-        lda spriteAnimsEndFrame,X
+        lda spriteAnimsEndFrame,x
         sta spriteAnimsEndFrameCurrent
         
-        LIBSPRITE_SETFRAME_AA spriteAnimsCurrent, spriteAnimsFrameCurrent
+        LIBMPLEX_SETFRAME_AA spriteAnimsCurrent, spriteAnimsFrameCurrent
 
-        dec spriteAnimsDelay,X
+        dec spriteAnimsDelay,x
         bne lSoUSkip
 
         ; reset the delay
-        lda spriteAnimsSpeed,X
-        sta spriteAnimsDelay,X
+        lda spriteAnimsSpeed,x
+        sta spriteAnimsDelay,x
 
         ; change the frame
-        inc spriteAnimsFrame,X
+        inc spriteAnimsFrame,x
         
         ; check if reached the end frame
         lda spriteAnimsEndFrameCurrent
-        cmp spriteAnimsFrame,X
+        cmp spriteAnimsFrame,x
         bcs lSoUSkip
 
         ; check if looping
-        lda spriteAnimsLoop,X
+        lda spriteAnimsLoop,x
         beq lSoUDestroy
 
         ; reset the frame
-        lda spriteAnimsStartFrame,X
-        sta spriteAnimsFrame,X
+        lda spriteAnimsStartFrame,x
+        sta spriteAnimsFrame,x
         jmp lSoUSkip
 
 lSoUDestroy
         ; turn off
         lda #False
-        sta spriteAnimsActive,X
-        LIBSPRITE_ENABLE_AV spriteAnimsCurrent, False
+        sta spriteAnimsActive,x
+        LIBMPLEX_SETVERTICALTPOS_AA spriteAnimsCurrent, hideY
 
 lSoUSkip
         ; loop for each sprite anim
         inx
         cpx #SpriteAnimsMax
-        ;bne lSUloop
         beq lSoUFinished
         jmp lSoUloop
-lSoUFinished
 
+lSoUFinished
+        rts
+
+;===============================================================================
+
+libSpritesSwap
+        ldy shieldOrder
+        ldx playerOrder
+
+        ; Swap frames
+        lda sortsprf,y
+        sta temp1
+        lda sortsprf,x
+        sta sortsprf,y
+        lda temp1
+        sta sortsprf,x
+
+        ; Setup Y
+        lda #PlayerStartY
+        sta sortspry,y
+        lda #PlayerStartY-1
+        sta sortspry,x
+
+        ; Setup Player Color
+        lda sortsprc,y
+        bmi lSSPlayerEndMark
+        lda playerColor
+        jmp lSSPlayerColor
+lSSPlayerEndMark
+        lda playerColor
+        ora #$80
+lSSPlayerColor
+        sta sortsprc,y
+
+        ; Setup Player Color
+        lda sortsprc,x
+        bmi lSSShieldEndMark
+        lda shieldColor
+        jmp lSSShieldColor
+lSSShieldEndMark
+        lda shieldColor
+        ora #$80
+lSSShieldColor
+        sta sortsprc,x
+
+        ; Setup Multicolor
+        lda #True
+        sta sortsprm,y
+        lda #False
+        sta sortsprm,x
+lSSDone
         rts

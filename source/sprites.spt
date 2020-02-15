@@ -747,7 +747,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>5592405</data>
+      <data>5592341</data>
       <data>5592405</data>
       <data>16777055</data>
       <data>16776575</data>
@@ -782,7 +782,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>5592320</data>
+      <data>5510400</data>
       <data>5594369</data>
       <data>16088321</data>
       <data>16612609</data>
@@ -817,7 +817,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>5592400</data>
+      <data>5526864</data>
       <data>7689556</data>
       <data>16089045</data>
       <data>16121845</data>
@@ -1062,7 +1062,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>1376597</data>
+      <data>1376596</data>
       <data>5570901</data>
       <data>8192501</data>
       <data>8192501</data>
@@ -1097,7 +1097,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>5592404</data>
+      <data>1397844</data>
       <data>5592405</data>
       <data>6288765</data>
       <data>8387965</data>
@@ -1152,7 +1152,7 @@
       <data>5758975</data>
       <data>1562623</data>
       <data>349525</data>
-      <data>87381</data>
+      <data>82261</data>
     </sdata>
    </sprite>
   <sprite>
@@ -1167,7 +1167,7 @@
     <expandx>False</expandx>
     <expandy>False</expandy>
     <sdata>
-      <data>5592400</data>
+      <data>5526864</data>
       <data>5592404</data>
       <data>16089045</data>
       <data>16121845</data>

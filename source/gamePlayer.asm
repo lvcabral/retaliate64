@@ -13,19 +13,29 @@ ShieldFirst             = 1
 ShieldLast              = 4
 PlayerExplode           = 7
 FinishExplode           = 18
-PlayerHorizontalSpeed   = 2
-PlayerVerticalSpeed     = 1
-PlayerStartXHigh        = 0
-PlayerStartXLow         = 175
+PlayerHorizontalSpeed   = 1
+PlayerStartX            = 87
 PlayerStartY            = 220
-PlayerXMinHigh          = 0     ; Reduced X range to increase difficulty
-PlayerXMinLow           = 48
-PlayerXMaxHigh          = 1     ; Reduced X range to increase difficulty
-PlayerXMaxLow           = 40
+PlayerXMin              = 24    ; Reduced X range to increase difficulty
+PlayerXMax              = 149   ; Reduced X range to increase difficulty
 PlayerYMin              = 220
 PlayerYMax              = 220
 PlayerMaxModels         = 5
 ShieldMaxEnergy         = $9A   ; Handled as decimal
+SizeX1                  = $0A   ; The area of the drawn sprite on the left
+SizeX2                  = $18   ; The area of the drawn sprite on the right
+SizeY1                  = $10   ; The area of the drawn sprite at the top
+SizeY2                  = $18   ; The area of the drawn sprite at the bottom
+
+;===============================================================================
+; Page Zero
+collisionX1             = $31
+collisionX2             = $32
+collisionY1             = $33
+collisionY2             = $34
+
+playerActive            = $35
+shieldActive            = $36
 
 ;===============================================================================
 ; Variables
@@ -34,68 +44,64 @@ playerFrameArray        byte 0, 26, 27, 28, 29
 playerFrameIndex        byte 0
 playerFrame             byte 0
 playerColor             byte Red
-playerSprite            byte 7
+playerSprite            byte 0
 shieldSprite            byte 0
-playerXHigh             byte PlayerStartXHigh
-playerXLow              byte PlayerStartXLow
+playerX                 byte PlayerStartX
 playerY                 byte PlayerStartY
+playerXHigh             byte 0
+playerXLow              byte 0
 playerXChar             byte 0
 playerXOffset           byte 0
 playerYChar             byte 0
-playerYOffset           byte 0
-playerActive            byte False
 playerWillDie           byte False
-shieldActive            byte False
 shieldColor             byte LightBlue
 shieldEnergy            byte ShieldMaxEnergy
-shieldSpeedArray        byte 1, 2, 3
-shieldSpeed             byte 2
+shieldSpeedArray        byte 1, 2, 3, 3
+shieldSpeed             byte 0
+shieldY                 byte 255
 
 ;===============================================================================
 ; Macros/Subroutines
 
-gamePlayerInit
-        
-        LIBSPRITE_MULTICOLORENABLE_AV   playerSprite, True
-        
-        rts
-
-;==============================================================================
-
 gamePlayerReset
-
         lda #True
         sta playerActive
         lda #ShieldMaxEnergy
         sta shieldEnergy
+        sta lastEnergy
 
         jsr gamePlayerLoadConfig
         jsr gamePlayerSetupShield
 
-        LIBSPRITE_ENABLE_AV             playerSprite, True
-        LIBSPRITE_SETFRAME_AA           playerSprite, playerFrame
-        LIBSPRITE_SETCOLOR_AA           playerSprite, playerColor
+        lda #AliensMax + 1
+        sta playerSprite
 
-        lda #PlayerStartXHigh
-        sta playerXHigh
-        lda #PlayerStartXLow
-        sta PlayerXLow
+        LIBMPLEX_SETFRAME_AA playerSprite, playerFrame
+        LIBMPLEX_SETCOLOR_AA playerSprite, playerColor
+
+        lda #PlayerStartX
+        sta playerX
         lda #PlayerStartY
-        sta PlayerY
-        LIBSPRITE_SETPOSITION_AAAA playerSprite, playerXHigh, playerXLow, playerY
-        LIBSPRITE_SETPOSITION_AAAA shieldSprite, playerXHigh, playerXLow, playerY
-        LIBSPRITE_DIDCOLLIDEWITHSPRITE_A playerSprite ; clear collision flag
+        sta playerY
+        sec
+        sbc #SizeY1
+        sta collisionY1
+        clc
+        adc #SizeY2
+        sta collisionY2
+        LIBMATH_ADD16BIT_VAVAAA 0, playerX, 0, playerX, playerXHigh, playerXLow
+        LIBMPLEX_SETPOSITION_AAAA playerSprite, playerXHigh, playerXLow, playerY
 
-        lda 0
-        sta lastEnergy
+        lda hideY
+        sta shieldY
+        lda #False
         sta shieldActive
-
-        jsr gameFlowUpdateGauge
+        jsr gameflowShieldGaugeFull
 
         rts
 
-
 ;===============================================================================
+
 gamePlayerLoadConfig
         ldx playerFrameIndex
         lda playerFrameArray,X
@@ -111,67 +117,94 @@ gamePlayerLoadConfig
         rts
 
 ;===============================================================================
+
 gamePlayerSetupShield
-        LIBSPRITE_ENABLE_AV             shieldSprite, False
-        LIBSPRITE_PLAYANIM_AVVVV        shieldSprite, ShieldFirst, ShieldLast, 5, True
-        LIBSPRITE_SETCOLOR_AA           shieldSprite, shieldColor
-        LIBSPRITE_MULTICOLORENABLE_AV   shieldSprite, False
+        LIBSPRITE_PLAYANIM_AVVVV  shieldSprite, ShieldFirst, ShieldLast, 5, True
+        LIBMPLEX_SETCOLOR_AA         shieldSprite, shieldColor
+        LIBMPLEX_MULTICOLORENABLE_AV shieldSprite, False
         rts
 
 ;===============================================================================
-gamePlayerUpdate
 
+gamePlayerUpdate
         lda playerActive
         beq gPUSkip
 
         jsr gamePlayerUpdatePosition
         jsr gamePlayerUpdateShieldEnergy
         jsr gamePlayerUpdateFiring
+
+        ; Don't check collisions every frame
+        lda aliensStep
+        bne gPUSkip
+
         jsr gamePlayerUpdateBulletCollisions
+
         lda playerActive
         beq gPUSkip
-
         jsr gamePlayerUpdateSpriteCollisions
 
 gPUSkip
-
         rts
 
 ;==============================================================================
 
 gamePlayerUpdateSpriteCollisions
-
         lda #False
         sta playerWillDie
-
-        LIBSPRITE_DIDCOLLIDEWITHSPRITE_A playerSprite
-        beq gPUSCNoCollide
-
-        lda spriteLastCollision
         sta aliensCollision
 
-        lda shieldActive
-        bne gPUSCNoCollide
+        ; update horizontal collision params
+        lda playerX
+        sec
+        sbc #SizeX1
+        sta collisionX1
+        clc
+        adc #SizeX2
+        sta collisionX2
+        ; check for collision with aliens
+        ldx #$FF
 
+gPUSCLoop
+        inx
+        cpx #AliensMax
+        beq gPUSCDone
+
+        lda aliensActiveArray,X
+        beq gPUSCLoop
+        lda aliensXArray,X
+        cmp collisionX1
+        bcc gPUSCLoop
+        cmp collisionX2
+        bcs gPUSCLoop
+        lda aliensYArray,X
+        cmp collisionY1
+        bcc gPUSCLoop
+        cmp collisionY2
+        bcs gPUSCLoop
+
+gPUSCHit
+        inx
+        stx aliensCollision
+        stx aliensSprite
+        lda shieldActive
+        bne gPUSCDone
         lda #True
         sta playerWillDie
-
-        jsr gameAliensUpdate ; make the alien to explode
+        jsr gameAliensKill
         jsr gamePlayerKilled
 
-gPUSCNoCollide
+gPUSCDone
         rts
 
 ;==============================================================================
 
 gamePlayerUpdateBulletCollisions
-
-        GAMEBULLETS_COLLIDED playerXChar, playerYChar, False
+        GAMEBULLETS_COLLIDED_DOWN_AA playerXChar, playerYChar
         beq gPUBCReturn
-
+        dec bulletsActiveDown
         lda shieldActive
         bne gPUBCCollectBullet
-
         jsr gamePlayerKilled
         jmp gPUBCReturn
 
@@ -187,30 +220,29 @@ gamePlayerKilled
         lda #False
         sta playerActive
         ; run explosion animation
-        LIBSPRITE_SETCOLOR_AV     playerSprite, Yellow
         LIBSPRITE_PLAYANIM_AVVVV  playerSprite, PlayerExplode, FinishExplode, 3, False
-
-        LIBSPRITE_ENABLE_AV       shieldSprite, False
+        LIBMPLEX_SETCOLOR_AV      playerSprite, Yellow
+        LIBMPLEX_SETPOSITION_AAAA shieldSprite, #0, playerX, hideY
 
         ; play explosion sound
         jsr libSoundInit
-        LIBSOUND_PLAY_VAA 1, soundExplosionHigh, soundExplosionLow
+        LIBSOUND_PLAY_VAA SoundVoice, soundExplosionHigh, soundExplosionLow
 
         jsr gameFlowPlayerDied
-
         rts
+
 ;==============================================================================
 
 gamePlayerCollectBullet
         ; play explosion sound
-        LIBSOUND_PLAY_VAA 1, soundPickupHigh, soundPickupLow
+        LIBSOUND_PLAY_VAA SoundVoice, soundPickupHigh, soundPickupLow
 
         jsr gameFlowAddBullet
         rts
+
 ;==============================================================================
 
 gamePlayerUpdateFiring
-
         ; do fire after the ship has been clamped to position
         ; so that the bullet lines up
         LIBINPUT_GETFIREPRESSED
@@ -225,28 +257,30 @@ gamePlayerUpdateFiring
         beq gPUFNofire
 
         ; fire the bullet
-        GAMEBULLETS_FIRE_AAAVV playerXChar, playerXOffset, playerYChar, Yellow, 1
+        GAMEBULLETS_FIRE_UP_AAA playerXChar, playerXOffset, playerYChar
+        cpx #BulletsMax
+        beq gPUFNofire
 
         ; play the firing sound
-        LIBSOUND_PLAY_VAA 1, soundFiringHigh, soundFiringLow
+        LIBSOUND_PLAY_VAA SoundVoice, soundFiringHigh, soundFiringLow
 
         jsr gameFlowUseBullet
 
 gPUFNofire
-
         rts
 
 ;===============================================================================
 
 gamePlayerUpdatePosition
-
         LIBINPUT_GETHELD GameportLeftMask
         bne gPUPRight
-        LIBMATH_SUB16BIT_AAVVAA playerXHigh, PlayerXLow, 0, PlayerHorizontalSpeed, playerXHigh, PlayerXLow
+        LIBMATH_SUB8BIT_AVA playerX, PlayerHorizontalSpeed, playerX
+
 gPUPRight
         LIBINPUT_GETHELD GameportRightMask
         bne gPUPDown
-        LIBMATH_ADD16BIT_AAVVAA playerXHigh, PlayerXLow, 0, PlayerHorizontalSpeed, playerXHigh, PlayerXLow
+        LIBMATH_ADD8BIT_AVA playerX, PlayerHorizontalSpeed, playerX
+
 gPUPDown
         LIBINPUT_GETHELD GameportDownMask
         bne gPUPNoShield ;down not pressed, disable shield
@@ -256,40 +290,39 @@ gPUPDown
         bne gPUPEndmove
         lda #True
         sta shieldActive
-        LIBSPRITE_ENABLE_AV shieldSprite, True
+        lda #PlayerStartY-1
+        sta shieldY
         jmp gPUPEndmove
+
 gPUPNoShield
         lda shieldActive
         beq gPUPEndmove
         lda #False
         sta shieldActive
-        LIBSPRITE_ENABLE_AV shieldSprite, False
-        LIBSPRITE_DIDCOLLIDEWITHSPRITE_A playerSprite ; clear collision flag
-gPUPEndmove
-        
-        ; clamp the player x position
-        LIBMATH_MIN16BIT_AAVV playerXHigh, playerXLow, PlayerXMaxHigh, PLayerXMaxLow
-        LIBMATH_MAX16BIT_AAVV playerXHigh, playerXLow, PlayerXMinHigh, PLayerXMinLow
-        
-        ; clamp the player y position
-        LIBMATH_MIN8BIT_AV playerY, PlayerYMax
-        LIBMATH_MAX8BIT_AV playerY, PlayerYMin
+        lda hideY
+        sta shieldY
 
-        ; set the sprite position
-        LIBSPRITE_SETPOSITION_AAAA playerSprite, playerXHigh, PlayerXLow, PlayerY
-        LIBSPRITE_SETPOSITION_AAAA shieldSprite, playerXHigh, PlayerXLow, PlayerY
+gPUPEndmove
+        ; clamp the player x position
+        LIBMATH_MIN8BIT_AV playerX, PlayerXMax
+        LIBMATH_MAX8BIT_AV playerX, PlayerXMin
 
         ; update the player char positions
-        LIBSCREEN_PIXELTOCHAR_AAVAVAAAA playerXHigh, playerXLow, 12, playerY, 40, playerXChar, playerXOffset, playerYChar, playerYOffset
+        LIBMATH_ADD16BIT_VAVAAA 0, playerX, 0, playerX, playerXHigh, playerXLow
+        LIBSCREEN_PIXELTOCHAR_AAVAVAAA playerXHigh, playerXLow, 12, playerY, 40, playerXChar, playerXOffset, playerYChar
+
+        ; set the sprite position
+        LIBMPLEX_SETPOSITION_AAAA playerSprite, playerXHigh, playerXLow, playerY
+        LIBMPLEX_SETPOSITION_AAAA shieldSprite, playerXHigh, playerXLow, shieldY
 
         rts
 
 ;===============================================================================
 
 gamePlayerUpdateShieldEnergy
-
         LIBINPUT_GETHELD GameportDownMask
         beq gPISEConsumeEnergy
+
 gPISERecoverEnergy        
         lda shieldEnergy
         cmp #ShieldMaxEnergy
@@ -298,6 +331,7 @@ gPISERecoverEnergy
         adc shieldSpeed
         sta shieldEnergy
         jmp gPISECUpdate
+
 gPISEConsumeEnergy
         lda shieldEnergy
         cmp shieldSpeed
@@ -306,13 +340,16 @@ gPISEConsumeEnergy
         sbc shieldSpeed
         sta shieldEnergy
         jmp gPISECUpdate
+
 gPISEMin
         lda #0
         sta shieldEnergy
         jmp gPISECUpdate
+
 gPISEMax
         lda #ShieldMaxEnergy
         sta shieldEnergy
+
 gPISECUpdate
         jsr gameFlowUpdateGauge
         rts

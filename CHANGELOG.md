@@ -1,5 +1,12 @@
 ## Retaliate 64 Changelog
 
+##### v0.4-v0.8 - Mar-2018 to Jul-2018 - Internal research and development
+- Integrated sprite multiplexer (by [Cadaver](https://cadaver.github.io/)), to increase the number of sprites on screen
+- Adapted new [star field routine (by Jay Aldred)](https://github.com/JasonAldred/C64-Starfield) to reduce CPU usage
+- Integrated exclusive SID music (by [Richard Bayliss](http://tnd64.unikat.sk/)) based on the original game theme
+- Added the Extreme skill level to match the original game
+- Several performance improvements
+
 ##### v0.3 - 03-Feb-2018 - Final Beta - SID Music
 - Updated Splash bitmap to show 3 of the ship models
 - Added SID music support (using [Dion Olsthoorn library](http://www.dionoidgames.com))

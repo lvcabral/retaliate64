@@ -20,25 +20,17 @@
 ;===============================================================================
 ; Initialize
 
-        ; Turn off CIAs Timer interrupts ($7F = %01111111)
-        ldy #$7F
-        sty $DC0D
-        sty $DD0D
-        ; Cancel all CIA-IRQs in queue/unprocessed
-        lda $DC0D
-        lda $DD0D
-
         ; Disable BASIC ROM
         lda #$36
         sta $01
 
         ; Disable shift + C= keys
         lda $80
-        sta $0291
+        sta MODE
 
         ; Disable run/stop + restore keys
         lda #$FC 
-        sta $0328
+        sta ISTOP
 
         ; Save VIC II mode (NTSC/PAL)
         lda $02A6
@@ -48,23 +40,25 @@
         jsr gameDataLoad
 
         ; Move VIC II to see 2nd memory bank ($4000-$7FFF)
-        lda $DD00
+        lda CI2PRA
         and #%11111100
         ora #%00000010
-        sta $DD00
+        sta CI2PRA
 
         ; Show Splash Bitmap
         jsr startSplash
 
+gARSeed ; Generate Random Seed
+        jsr RDTIM
+        cmp #0
+        beq gARSeed
+        sta rndSeed
+
         ; Set border and background colors
-        ; The last 3 parameters are not used yet
         LIBSCREEN_SETCOLORS Black, Black, Black, Black, Black
 
         ; Fill 1000 bytes (40x25) of screen memory 
         LIBSCREEN_SET1000 SCREENRAM, SpaceCharacter
-
-        ; Fill 1000 bytes (40x25) of color memory
-        LIBSCREEN_SET1000 COLORRAM, White
 
         ; Set sprite multicolors
         LIBSPRITE_SETMULTICOLORS_VV LightBlue, White
@@ -75,22 +69,26 @@
         ; Initialize SID registers
         jsr libSoundInit
 
+        ; Initialize Sprite Multiplexer
+        jsr libMultiplexInit
+
         ; Initialize the game
-        jsr gamePlayerInit
+        jsr gameAliensInit
         jsr gameFlowInit
+        jsr gameStarsInit
+        jsr gameStarsCache
+
 ;===============================================================================
-; Update
+; Main Game Loop
 
 gMLoop
-        ; Wait for scanline 255
-        LIBSCREEN_WAIT_V 255
-
-        ; Start code timer change border color
-        ;inc EXTCOL
         lda flowPaused
         bne gMFlow
 
-        ; Update the library
+        ; Start code timer change border color
+        ;inc EXTCOL
+
+        ; Update libraries
         jsr libInputUpdate
         jsr libSpritesUpdate
 
@@ -98,6 +96,11 @@ gMLoop
         lda playerActive
         beq gMSound
 
+        lda sidDisabled
+        bne gMGame
+        ;inc EXTCOL
+        jsr libMusicUpdate
+gMGame
         ;inc EXTCOL
         jsr gameAliensUpdate
         ;inc EXTCOL
@@ -107,24 +110,39 @@ gMLoop
 
 gMSound
         lda soundDisabled
-        bne gMMusic
+        bne gMStars
         ;inc EXTCOL
         jsr libSoundUpdate
 
-gMMusic
-        lda sidDisabled
-        bne gMStars
-        jsr libMusicUpdate
 gMStars
         ;inc EXTCOL
         jsr gameStarsUpdate
+
 gMFlow
         ;inc EXTCOL
         jsr gameFlowUpdate
-
         ; End code timer reset border color
         ;lda #0
         ;sta EXTCOL
 
-        ; Loop back to the start of the game loop
+        ;Sort sprites, build sprite IRQ lists and set the update flag
+        jsr sortsprites
+        ;Check if shield is under the player ship to swap
+        lda shieldOrder
+        cmp #$07
+        bne gMNext
+        lda playerOrder
+        cmp #$08
+        bne gMNext
+        jmp gMSwap
+gMNext
+        lda shieldOrder
+        cmp #$17
+        bne gMEndLoop
+        lda playerOrder
+        cmp #$18
+        bne gMEndLoop
+gMSwap
+        jsr libSpritesSwap
+gMEndLoop
         jmp gMLoop

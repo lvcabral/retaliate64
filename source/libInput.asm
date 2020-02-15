@@ -17,7 +17,7 @@ GameportDownMask        = %00000010
 GameportLeftMask        = %00000100
 GameportRightMask       = %00001000
 GameportFireMask        = %00010000
-FireDelayMax            = 30
+FireDelayMax            = 15
 
 ;===============================================================================
 ; Variables
@@ -40,7 +40,6 @@ defm    LIBINPUT_GETHELD ; (buttonMask)
 ;===============================================================================
 
 defm    LIBINPUT_GETFIREPRESSED
-     
         lda #1
         sta fireBlip ; clear Fire flag
 
