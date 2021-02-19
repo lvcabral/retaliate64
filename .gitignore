@@ -1,8 +1,11 @@
 .vscode
+.directory
 
-out
+out/
 
-bak
+bak/
+
+disk/
 
 *.dmp
 
@@ -12,9 +15,9 @@ bak
 
 *.tmp
 
-#############
-## Windows detritus
-#############
+*.bak
+
+*.prg
 
 # Windows image file caches
 Thumbs.db

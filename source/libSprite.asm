@@ -1,41 +1,24 @@
 ;===============================================================================
 ;  libSprite.asm - VIC II Sprite related Macros and Routines
 ;
+;  Copyright (C) 2017,2019 Marcelo Lv Cabral - <https://lvcabral.com>
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
-; Constants
-
-SpriteAnimsMax = MAXSPR
-
-;===============================================================================
-; Page Zero
-
-shieldOrder     = $09
-playerOrder     = $0A
-
-;===============================================================================
 ; Variables
 
-spriteAnimsActive          dcb SpriteAnimsMax, 0
-spriteAnimsStartFrame      dcb SpriteAnimsMax, 0
-spriteAnimsFrame           dcb SpriteAnimsMax, 0
-spriteAnimsEndFrame        dcb SpriteAnimsMax, 0
-spriteAnimsStopFrame       dcb SpriteAnimsMax, 0
-spriteAnimsSpeed           dcb SpriteAnimsMax, 0
-spriteAnimsDelay           dcb SpriteAnimsMax, 0
-spriteAnimsLoop            dcb SpriteAnimsMax, 0
+spriteId                   byte 0
+spriteFrame                byte 0
+spriteColor                byte 0
+spriteMulticolor           byte 0
+spriteX                    byte 0
+spriteY                    byte 0
 
 spriteNumberMask           byte %00000001, %00000010, %00000100, %00001000
                            byte %00010000, %00100000, %01000000, %10000000
-
-spriteAnimsCurrent         byte 0
-spriteAnimsFrameCurrent    byte 0
-spriteAnimsEndFrameCurrent byte 0
 
 spriteLastCollision        byte 0
 
@@ -93,15 +76,6 @@ defm    LIBSPRITE_ENABLE_AA                ; /1 = Sprite Number (Address)
 @done
         endm
 
-;==============================================================================
-
-defm    LIBSPRITE_ISANIMPLAYING_A      ; /1 = Sprite Number    (Address)
-
-        ldy /1
-        lda spriteAnimsActive,y
-
-        endm
-
 ;===============================================================================
 
 defm    LIBSPRITE_MULTICOLORENABLE_AA    ; /1 = Sprite Number (Address)
@@ -142,31 +116,6 @@ defm    LIBSPRITE_MULTICOLORENABLE_AV   ; /1 = Sprite Number (Address)
 @done
         endm
 
-;==============================================================================
-
-defm    LIBSPRITE_PLAYANIM_AVVVV        ; /1 = Sprite Number    (Address)
-                                        ; /2 = StartFrame       (Value)
-                                        ; /3 = EndFrame         (Value)
-                                        ; /4 = Speed            (Value)
-                                        ; /5 = Loop True/False  (Value)
-
-        ldy /1
-
-        lda #True
-        sta spriteAnimsActive,y
-        lda #/2
-        sta spriteAnimsStartFrame,y
-        sta spriteAnimsFrame,y
-        lda #/3
-        sta spriteAnimsEndFrame,y
-        lda #/4
-        sta spriteAnimsSpeed,y
-        sta spriteAnimsDelay,y
-        lda #/5
-        sta spriteAnimsLoop,y
-
-        endm
-
 ;===============================================================================
 
 defm    LIBSPRITE_SETCOLOR_AV           ; /1 = Sprite Number    (Address)
@@ -188,7 +137,7 @@ defm    LIBSPRITE_SETCOLOR_AA           ; /1 = Sprite Number    (Address)
 ;==============================================================================
 
 defm    LIBSPRITE_SETFRAME_AA           ; /1 = Sprite Number    (Address)
-                                        ; /2 = Anim Index       (Address)
+                                        ; /2 = Frame Index       (Address)
         ldy /1
         
         clc     ; Clear carry before add
@@ -201,7 +150,7 @@ defm    LIBSPRITE_SETFRAME_AA           ; /1 = Sprite Number    (Address)
 ;===============================================================================
 
 defm    LIBSPRITE_SETFRAME_AV           ; /1 = Sprite Number    (Address)
-                                        ; /2 = Anim Index       (Value)
+                                        ; /2 = Frame Index       (Value)
         ldy /1
         
         clc     ; Clear carry before add
@@ -296,7 +245,7 @@ defm    LIBSPRITE_SETVERTICALTPOS_AA    ; /1 = Sprite Number    (Address)
 
 ;===============================================================================
 
-defm    LIBSPRITE_SETPRIORITY_AV ; /1 = Sprite Number           (Address)
+defm    LIBSPRITE_SETPRIORITY_AV ; /1 = Sprite Number              (Address)
                                  ; /2 = True = Back, False = Front (Value)
         ldy /1
         lda spriteNumberMask,y
@@ -316,7 +265,7 @@ defm    LIBSPRITE_SETPRIORITY_AV ; /1 = Sprite Number           (Address)
 
 ;===============================================================================
 
-defm    LIBSPRITE_SETPRIORITY_AA ; /1 = Sprite Number           (Address)
+defm    LIBSPRITE_SETPRIORITY_AA ; /1 = Sprite Number              (Address)
                                  ; /2 = True = Back, False = Front (Address)
         ldy /1
         lda spriteNumberMask,y
@@ -333,124 +282,3 @@ defm    LIBSPRITE_SETPRIORITY_AA ; /1 = Sprite Number           (Address)
         sta SPBGPR
 @done
         endm
-
-;==============================================================================
-
-defm    LIBSPRITE_STOPANIM_A            ; /1 = Sprite Number    (Address)
-
-        ldy /1
-        lda #0
-        sta spriteAnimsActive,y
-
-        endm
-
-;==============================================================================
-
-libSpritesUpdate
-        ldx #0
-
-lSoULoop
-        ; skip this sprite anim if not active
-        lda spriteAnimsActive,x
-        bne lSoUActive
-        jmp lSoUSkip
-
-lSoUActive
-        stx spriteAnimsCurrent
-        lda spriteAnimsFrame,x
-        sta spriteAnimsFrameCurrent
-
-        lda spriteAnimsEndFrame,x
-        sta spriteAnimsEndFrameCurrent
-        
-        LIBMPLEX_SETFRAME_AA spriteAnimsCurrent, spriteAnimsFrameCurrent
-
-        dec spriteAnimsDelay,x
-        bne lSoUSkip
-
-        ; reset the delay
-        lda spriteAnimsSpeed,x
-        sta spriteAnimsDelay,x
-
-        ; change the frame
-        inc spriteAnimsFrame,x
-        
-        ; check if reached the end frame
-        lda spriteAnimsEndFrameCurrent
-        cmp spriteAnimsFrame,x
-        bcs lSoUSkip
-
-        ; check if looping
-        lda spriteAnimsLoop,x
-        beq lSoUDestroy
-
-        ; reset the frame
-        lda spriteAnimsStartFrame,x
-        sta spriteAnimsFrame,x
-        jmp lSoUSkip
-
-lSoUDestroy
-        ; turn off
-        lda #False
-        sta spriteAnimsActive,x
-        LIBMPLEX_SETVERTICALTPOS_AA spriteAnimsCurrent, hideY
-
-lSoUSkip
-        ; loop for each sprite anim
-        inx
-        cpx #SpriteAnimsMax
-        beq lSoUFinished
-        jmp lSoUloop
-
-lSoUFinished
-        rts
-
-;===============================================================================
-
-libSpritesSwap
-        ldy shieldOrder
-        ldx playerOrder
-
-        ; Swap frames
-        lda sortsprf,y
-        sta temp1
-        lda sortsprf,x
-        sta sortsprf,y
-        lda temp1
-        sta sortsprf,x
-
-        ; Setup Y
-        lda #PlayerStartY
-        sta sortspry,y
-        lda #PlayerStartY-1
-        sta sortspry,x
-
-        ; Setup Player Color
-        lda sortsprc,y
-        bmi lSSPlayerEndMark
-        lda playerColor
-        jmp lSSPlayerColor
-lSSPlayerEndMark
-        lda playerColor
-        ora #$80
-lSSPlayerColor
-        sta sortsprc,y
-
-        ; Setup Player Color
-        lda sortsprc,x
-        bmi lSSShieldEndMark
-        lda shieldColor
-        jmp lSSShieldColor
-lSSShieldEndMark
-        lda shieldColor
-        ora #$80
-lSSShieldColor
-        sta sortsprc,x
-
-        ; Setup Multicolor
-        lda #True
-        sta sortsprm,y
-        lda #False
-        sta sortsprm,x
-lSSDone
-        rts

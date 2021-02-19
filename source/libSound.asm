@@ -126,10 +126,12 @@ soundFiring     byte CmdAttackDecay, Attack_2ms+Decay_6ms
                 byte CmdWave, SawtoothEnd
 
                 byte CmdEnd
+
 soundFiringHigh byte >soundFiring
 soundFiringLow  byte <soundFiring
 
-; --------------------------------------------------------
+;-------------------------------------------------------------------------------
+; Explosion sound effects
 
 soundExplosion  byte CmdWave, NoiseEnd
                 byte CmdAttackDecay, Attack_38ms+Decay_114ms
@@ -140,10 +142,11 @@ soundExplosion  byte CmdWave, NoiseEnd
                 byte CmdDelay, 20
                 byte CmdWave, NoiseEnd
                 byte CmdEnd
+
 soundExplosionHigh byte >soundExplosion
 soundExplosionLow  byte <soundExplosion
 
-; --------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 soundPickup     byte CmdAttackDecay, Attack_2ms+Decay_6ms
                 byte CmdSustainRelease, Sustain_Vol10+Release_6ms
@@ -165,30 +168,43 @@ soundPickup     byte CmdAttackDecay, Attack_2ms+Decay_6ms
 soundPickupHigh byte >soundPickup
 soundPickupLow  byte <soundPickup
 
-; --------------------------------------------------------
+;-------------------------------------------------------------------------------
 
-soundEnding     byte CmdPulseWidthHigh, 8
-                byte CmdPulseWidthLow, 128
-                byte CmdFrequencyHigh, 56
-                byte CmdFrequencyLow, 99
+soundFullAmmo   byte CmdAttackDecay, Attack_38ms+Decay_114ms
+                byte CmdSustainRelease, Sustain_Vol10+Release_72ms
+                byte CmdFrequencyHigh, 18
+                byte CmdFrequencyLow, 125
+                byte CmdWave, SawtoothStart
+                byte CmdDelay, 7
+                byte CmdWave, SawtoothEnd
 
-                byte CmdAttackDecay, Attack_2ms+Decay_6ms
-                byte CmdSustainRelease, Sustain_Vol10+Release_6ms
-                byte CmdWave, PulseStart
-                byte CmdDelay, 5
-                byte CmdWave, PulseEnd
+                byte CmdAttackDecay, Attack_2ms+Decay_114ms
+                byte CmdSustainRelease, Sustain_Vol10+Release_72ms
+                byte CmdFrequencyHigh, 22
+                byte CmdFrequencyLow, 125
+                byte CmdWave, SawtoothStart
+                byte CmdDelay, 7
+                byte CmdWave, SawtoothEnd
 
-                byte CmdDelay, 1
+                byte CmdAttackDecay, Attack_2ms+Decay_114ms
+                byte CmdSustainRelease, Sustain_Vol10+Release_72ms
+                byte CmdFrequencyHigh, 26
+                byte CmdFrequencyLow, 125
+                byte CmdWave, SawtoothStart
+                byte CmdDelay, 7
+                byte CmdWave, SawtoothEnd
 
-                byte CmdAttackDecay, Attack_2ms+Decay_6ms
+                byte CmdAttackDecay, Attack_2ms+Decay_114ms
                 byte CmdSustainRelease, Sustain_Vol10+Release_750ms
-                byte CmdWave, PulseStart
-                byte CmdDelay, 30
-                byte CmdWave, PulseEnd
-
+                byte CmdWave, SawtoothStart
+                byte CmdFrequencyHigh, 33
+                byte CmdFrequencyLow, 96
+                byte CmdDelay, 5
+                byte CmdWave, SawtoothEnd
                 byte CmdEnd
-soundEndingHigh byte >soundEnding
-soundEndingLow  byte <soundEnding
+
+soundFullAmmoHigh byte >soundFullAmmo
+soundFullAmmoLow  byte <soundFullAmmo
 
 ;===============================================================================
 ; Macros/Subroutines
@@ -266,11 +282,13 @@ lSULoop
         lda soundVoiceActive,X
         bne lSUActive
         jmp lSUDone
+
 lSUActive
         lda soundVoiceDelay,X
         beq lSUProcess
         dec soundVoiceDelay,X
         jmp lSUDone
+
 lSUProcess
 
         lda soundVoiceCmdPtrLow,X ; load low address byte

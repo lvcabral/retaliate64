@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameFlow.asm - Game Flow Control
 ;
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -12,63 +12,72 @@
 FlowStateMenu   = 0
 FlowStateAlive  = 1
 FlowStateDying  = 2
+FlowStateHangar = 3
+
+FlowMenuPages   = 5
+FramesMax       = 10
+
 JoyStickDelay   = 10
-BarCharacter    = $50
-OneCharacter    = $31
+
+GaugeX          = 1
+GaugeBarX       = 5
+StatusY         = 24
+
+StartGame       = 0
+OpenHangar      = 1
+
+GameOverDelay   = $20
+
+CyclesPAL       = $50   ; Cycle constants used in Decimal Mode
+CyclesNTSC      = $60
+
+HangarMenuStart = #5
+HangarMenuExit  = #7
+HangarMenuShip  = #8
 
 ;===============================================================================
 ; Page Zero
 
-time1           = $0B
-time2           = $0C
+time1           = $0A
+time2           = $0B
+cycles          = $0C
+frame           = $0D
+speedTableLow   = $0E
+speedTableHigh  = $0F
 
 ;===============================================================================
 ; Variables
 
-flowScoreX      byte 7
-flowScoreNumX   byte 0
-flowScoreY      byte 0
-score1          byte 0
-score2          byte 0
 score3          byte 0
+score2          byte 0
+score1          byte 0
 
-flowHiScoreX    byte 24
-flowHiScoreNumX byte 0
-flowHiScoreY    byte 0
-hiscore1        byte 0
-hiscore2        byte 0
 hiscore3        byte 0
+hiscore2        byte 0
+hiscore1        byte 0
 statsHiScore    byte 0
 
-flowGaugeX      byte 1
-flowGaugeOneX   byte 2
-flowGaugeBarX   byte 5
 flowGaugeChrX   byte 0
-flowGaugeY      byte 24
 energy          byte 0
 lastEnergy      byte 0
 flowGaugeCnt    byte 0
 flowGaugeClr    byte 0
 
-flowAmmoX       byte 32
-flowAmmoNumX    byte 0
-flowAmmoY       byte 24
 bullets         byte 0
 bullets1        byte 0
 bullets2        byte 0
+
+bombs           byte 0
+bombs1          byte 0
+bombs2          byte 0
+
 aliens1         byte 0
 aliens2         byte 0
 
+flowMute        byte 0
+
 flowJoystick    byte 0
 
-flowScoreText   text 'score:'
-                byte 0
-flowHiScoreText text 'hi:'
-                byte 0
-flowAmmoText    text 'ammo:'
-                byte 0
-flowAmmoClear   dcb 8, SpaceCharacter
-                byte 0
 flowGaugeFull   text '100%'
                 byte 0
 flowGaugeTxt    byte $31, $00
@@ -77,11 +86,14 @@ flowGaugeSpc    byte SpaceCharacter, $00
 flowGaugeChr    byte BarCharacter, $00
 flowGaugeBar    dcb 15, BarCharacter
                 byte 0
-flowGaugeClear  dcb 19, SpaceCharacter
-                byte 0
 flowPaused      byte 0
 flowState       byte FlowStateMenu
-flowDone        byte 1
+flowLevel       byte LevelNormal
+flowMenuArray   byte MenuStory, MenuEnemies, MenuInfo, MenuHonor, MenuCredits
+flowMenuTimes   byte $20, $15, $15, $15, $15
+flowMenuIndex   byte 0
+flowStageCnt    byte 0
+flowStageIndex  byte 0
 
 ;===============================================================================
 ; Jump Tables
@@ -90,171 +102,221 @@ gameFlowJumpTableLow
         byte <gameFlowUpdateMenu
         byte <gameFlowUpdateAlive
         byte <gameFlowUpdateDying
+        byte <gameFlowUpdateHangar
 
 gameFlowJumpTableHigh
         byte >gameFlowUpdateMenu
         byte >gameFlowUpdateAlive
         byte >gameFlowUpdateDying
+        byte >gameFlowUpdateHangar
 
 ;===============================================================================
 ; Macros/Subroutines
 
 gameFlowInit
-        LIBSCREEN_DRAWTEXT_AAAV flowScoreX, flowScoreY, flowScoreText, White
+        LIBSCREEN_DRAWTEXT_AAAV #ScoreX, #ScoreY, flowScoreText, White
         jsr gameFlowScoreDisplay
 
-        LIBSCREEN_DRAWTEXT_AAAV flowHiScoreX, flowHiScoreY, flowHiScoreText, White
-        jsr gameFlowHiScoreDisplay
-
-        rts
+        LIBSCREEN_DRAWTEXT_AAAV #HiScoreX, #ScoreY, flowHiScoreText, White
+        jmp gameFlowHiScoreDisplay
 
 ;===============================================================================
+
+gameFlowUpdate
+        ; get the current state
+        ldy flowState
+
+        ; write the subroutine address to a zeropage location
+        lda gameFlowJumpTableLow,Y
+        sta ZeroPageLow
+        lda gameFlowJumpTableHigh,Y
+        sta ZeroPageHigh
+
+        ; jump to the subroutine the zeropage location points to
+        jmp (ZeroPageLow)
+
+;===============================================================================
+
 gameFlowUpdateMenu
         lda menuDisplayed
         bne gFUMCheckFire
-        jsr gameMenuShowLogo
-        jsr gameMenuShowText
+        ldy #0
+        jmp gFUMShowMenu
 
 gFUMCheckFire
         LIBINPUT_GETFIREPRESSED
-        beq gFUMStartGame
-        lda screenColumn
-        cmp #MenuStory
-        beq gFUMStoryKeys
-        cmp #MenuHangar
-        beq gFUMHangarKeys
+        beq gFUMSelect
+        lda flowJoystick
+        bne gFUMDecJoystick
+        lda #JoyStickDelay
+        sta flowJoystick
+
+gFUMJoyLeft
+        LIBINPUT_GETHELD GameportLeftMask
+        bne gFUMJoyRight
+        lda menuOption
+        beq gFUMDecScreenTimer
+        dec menuOption
+        jsr gameMenuCursorDisplay
         jmp gFUMDecScreenTimer
 
-gFUMStoryKeys
-        jsr SCNKEY
-        jsr GETIN
-        cmp #KEY_F1
-        beq gFUMShowInfo
-        cmp #KEY_F3
-        beq gFUMShowHangar
-        cmp #KEY_F5
-        beq gFUMShowCredits
-        jmp gFUMEnd
+gFUMJoyRight
+        LIBINPUT_GETHELD GameportRightMask
+        bne gFUMJoyUp
+        lda menuOption
+        bne gFUMDecScreenTimer
+        inc menuOption
+        jsr gameMenuCursorDisplay
+        jmp gFUMDecScreenTimer
 
-gFUMStartGame
+gFUMJoyUp
+        LIBINPUT_GETHELD GameportUpMask
+        bne gFUMDecScreenTimer
+        jmp gFUMNextMenu
+
+gFUMSelect
+        lda menuOption
+        cmp #StartGame
+        bne gFUMShowHangar
         jmp gameFlowStartGame
 
 gFUMShowHangar
-        lda #MenuHangar
-        sta screenColumn
-        jsr gameMenuShowHangar
+        mva #MenuHangar, screenColumn
+        mva #FlowStateHangar, flowState
         jsr gameMenuShowText
+        jsr gameMenuShowHangar
+        ; Reset menu cursor
+        ldy #0
+        sty hangarOption
+        mva #White, cursorColor
+        mva #MenuCursor, cursorChar
+        jsr gameFlowHangarCursor
         jsr gameMenuLevelDisplay
         jsr gameMenuMusicDisplay
         jsr gameMenuSfxDisplay
         jsr gameMenuModelReset
         jmp gFHModelDisplay
 
+gFUMDecJoystick
+        dec flowJoystick
+
 gFUMDecScreenTimer
         jsr gameFlowDecreaseTime
-        lda time2
-        beq gFUMShowStory
-        jmp gFUMEnd
-
-gFUMShowStory
-        lda #MenuStory
-        sta screenColumn
-        jsr gameMenuShowLogo
-        jmp gameMenuShowText
-
-gFUMShowInfo
-        jsr gameFlowResetScreenTime
-        lda #MenuInfo
-        sta screenColumn
-        jmp gameMenuShowText
-
-gFUMHangarKeys
-        jmp gameFlowHangar
-
-gFUMShowCredits
-        jsr gameFlowResetScreenTime
-        lda #MenuCredits
-        sta screenColumn
-        jsr gameMenuShowText
-
-gFUMEnd
+        beq gFUMNextMenu
         rts
 
-;===============================================================================
-gameFlowHangar
-        lda messageFlag
-        bne gFHDecMsgTimer
-        lda flowJoystick
-        bne gFHCheckKeys
-        lda #JoyStickDelay
-        sta flowJoystick
-        jmp gFHJoyLeft
+gFUMNextMenu
+        ldy flowMenuIndex
+        iny
+        cpy #FlowMenuPages
+        bcc gFUMShowMenu
+        ldy #0
 
-gFHDecMsgTimer
+gFUMShowMenu
+        sty flowMenuIndex
+        lda flowMenuArray,Y
+        sta screenColumn
+        jsr gameFlowResetScreenTime
+        jsr gameMenuShowText
+        jsr gameMenuShowBorder
+        jsr gameMenuShowLogo
+        jmp gameMenuCursorDisplay
+
+;===============================================================================
+
+gameFlowUpdateHangar
+        LIBINPUT_GETFIREPRESSED
+        bne gFUHCheckMessage
+        jmp gFUHSelect
+
+gFUHCheckMessage
+        lda messageFlag
+        beq gFUHCheckJoystick
         jsr gameFlowDecreaseTime
-        lda time2
-        beq gFHRestoreMenu
+        bne gFHReturn
+        jmp gameMenuRestore
+
+gFUHCheckJoystick
+        lda flowJoystick
+        beq gFHResetJoystick
         jmp gFHEnd
 
-gFHRestoreMenu
-        jsr gameMenuRestore
-        jmp gameMenuLevelDisplay
+gFHResetJoystick
+        mva #JoyStickDelay, flowJoystick
+        jmp gFHJoyLeft
 
 gFHJoyLeft
         LIBINPUT_GETHELD GameportLeftMask
         bne gFHJoyRight
-        jmp gFHPrevModel
+        ldy hangarOption
+        cpy #HangarMenuStart+1
+        bcc gFHJoyRight
+        cpy #HangarMenuShip
+        bcc gFHCPrev
+        mva #0, hangarOption
+        jmp gameFlowHangarMenu
 
 gFHJoyRight
         LIBINPUT_GETHELD GameportRightMask
+        bne gFHJoyUp
+        ldy hangarOption
+        cpy #HangarMenuExit
+        bcs gFHJoyUp
+        cpy #HangarMenuStart
+        bcs gFHCNext
+        mva #HangarMenuShip, hangarOption
+        jmp gameFlowHangarMenu
+
+gFHJoyUp
+        LIBINPUT_GETHELD GameportUpMask
         bne gFHJoyDown
-        jmp gFHNextModel
+        ldy hangarOption
+        beq gFHJoyDown
+        cpy #HangarMenuStart+1
+        bcc gFHCPrev
+        cpy #HangarMenuExit
+        beq gFHCNext
 
 gFHJoyDown
         LIBINPUT_GETHELD GameportDownMask
-        bne gFHHideShield
-        jsr gameMenuShieldDisplay
-        jmp gFHCheckKeys
+        bne gFHReturn
+        ldy hangarOption
+        cpy #HangarMenuStart
+        bcc gFHCNext
+        cpy #HangarMenuShip
+        beq gFHCPrev
 
-gFHHideShield
-        jmp gameMenuShielHide
+gFHReturn
+        jmp gFHEnd
 
-gFHCheckKeys
-        dec flowJoystick
-        ; Hangar Menu Key handling
-        jsr SCNKEY
-        jsr GETIN
-        cmp #KEY_LEFT
-        beq gFHPrevModel
-        cmp #KEY_RIGHT
-        beq gFHNextModel
-        cmp #KEY_DOWN
-        beq gFHPrevModel
-        cmp #KEY_UP
-        beq gFHNextModel
-        cmp #KEY_F1
+gFHCPrev
+        dec hangarOption
+        jmp gameFlowHangarMenu
+
+gFHCNext
+        inc hangarOption
+        jmp gameFlowHangarMenu
+
+gFUHSelect
+        lda hangarOption
         beq gFHShipColor
-        cmp #KEY_F3
+        cmp #1
         beq gFHShieldColor
-        cmp #KEY_F5
-        beq gFHLevel
-        cmp #KEY_M
+        cmp #2
         beq gFHMusicSwitch
-        cmp #KEY_S
+        cmp #3
         beq gFHSfxSwitch
-        cmp #KEY_F7
+        cmp #4
+        beq gFHLevel
+        cmp #6
         beq gFHSaveData
-        cmp #KEY_BACK
+        cmp #HangarMenuExit
+        beq gFHExitHangar
+        cmp #HangarMenuShip
+        beq gFHNextModel
+        cmp #HangarMenuStart
         bne gFHEnd
-        jmp gFUMShowStory
-
-gFHPrevModel
-        jsr gameMenuModelPrevious
-        jmp gFHModelDisplay
-
-gFHNextModel
-        jsr gameMenuModelNext
-        jmp gFHModelDisplay
+        jmp gameFlowStartGame
 
 gFHShipColor
         jsr gameMenuShipColorNext
@@ -262,19 +324,17 @@ gFHShipColor
 
 gFHShieldColor
         jsr gameMenuShieldColorNext
+        jsr gameMenuShieldDisplay
         jmp gameMenuColorDisplay
 
-gFHLevel
-        jsr gameMenuLevelChange
-        jmp gameMenuLevelDisplay
-
 gFHMusicSwitch
-        jsr gameMenuMusicSwitch
-        jmp gameMenuMusicDisplay
+        jmp gameMenuMusicSwitch
 
 gFHSfxSwitch
-        jsr gameMenuSfxSwitch
-        jmp gameMenuSfxDisplay
+        jmp gameMenuSfxSwitch
+
+gFHLevel
+        jmp gameMenuLevelChange
 
 gFHSaveData
         jsr gameMenuSavingDisplay
@@ -282,268 +342,459 @@ gFHSaveData
         jsr gameMenuSavedDisplay
         jmp gameFlowResetMsgTime
 
+gFHExitHangar
+        ; change state
+        jsr libMultiplexReset
+        mva #FlowStateMenu, flowState
+        ldy #0
+        sty messageFlag
+        jmp gFUMShowMenu
+
+gFHNextModel
+        jsr gameMenuModelNext
+
 gFHModelDisplay
         jsr gameMenuColorDisplay
-        jsr gameMenuModelDisplay
+        jmp gameMenuModelDisplay
 
 gFHEnd
+        dec flowJoystick
         rts
 
 ;===============================================================================
-gameFlowStartGame
 
+gameFlowHangarMenu
+        mva #LightBlue, cursorColor
+        mva #SpaceCharacter, cursorChar
+        jsr gameFlowHangarCursor
+        mva #White, cursorColor
+        mva #MenuCursor, cursorChar
+        ldy hangarOption
+        jsr gameFlowHangarCursor
+        lda hangarOption
+        cmp #1
+        bne gFHMHideShield
+        jmp gameMenuShieldDisplay
+
+gFHMHideShield
+        jmp gameMenuShieldHide
+
+;===============================================================================
+
+gameFlowHangarCursor
+        lda hangarXArray,Y
+        sta cursorX
+        lda hangarYArray,Y
+        sta cursorY
+        lda hangarSizeArray,Y
+        sta cursorSize
+        jmp gameMenuCursorPaint
+
+;===============================================================================
+
+gameFlowStartGame
         ; set screen
+        jsr libMultiplexReset
         jsr gameMenuClearText
         jsr gameStarsScreen
         jsr gameFlowInit
         jsr gameFlowShowGameStatus
+        LIBSCREEN_SETCHARMEMORY CHARSETPOSGAME
+        lda rndSeed
+        beq gFSGSeed
+        ; Get next Bomb Type
+        inc bombTypeRndIndex
+        lda bombTypeRndIndex
+        jmp gFSGCheckBombArray
 
-        ; set difficulty level
+gFSGSeed
+        ; Generate Random Seed
+        jsr RDTIM
+        cmp #0
+        beq gFSGSeed
+        clc
+        adc time1
+        sta rndSeed
+        ; Use seed to set first bomb type
+        tax
+        lda wavesRndTable,X
+        sta bombTypeRndIndex
+
+gFSGCheckBombArray
+        cmp #BombRndArrayMax
+        bcc gFSGSetupGame
+        mva #0, bombTypeRndIndex
+
+gFSGSetupGame
+if SHOWRNDSEED = 1
+        LIBSCREEN_DRAWHEX_AAAV #00, #0, rndSeed, DarkGray
+endif
+        ; load player ship configuration
+        jsr gamePlayerLoadConfig
+        ; set skill level
         ldx levelNum
+        lda stagesOffsetArray,X
+        sta flowStageIndex
+        stx flowLevel
+        jsr gameFlowSkillLevel
+        mva #OneCharacter, stageNumChar
+        ; reset game
+        lda #MenuGameOver
+        sta screenColumn
+        sta flowMenuIndex
+        lda #0
+        sta flowPaused
+        sta menuOption
+        sta flowStageCnt
+        jsr gameFlowAlienSprites
+        jsr gameFlowResetScore
+        jsr gameFlowResetAmmo
+        jsr gameBomberInit
+        jsr gameAliensReset
+        jsr gamePlayerReset
+        ; change state
+        mva #FlowStateAlive, flowState
+        ; set SID state
+        lda sidDisabled
+        and soundDisabled
+        sta flowMute
+        mva sidDisabled, musicOff
+        jmp libMusicInit
+
+;===============================================================================
+
+gameFlowSkillLevel
+        ;current level must be on register X
         lda bulletSpeedArray,X
         sta bulletSpeed
         lda shieldSpeedArray,X
         sta shieldSpeed
-        lda aliensSpeedArray,X
-        sta aliensSpeed
-        lda wavesTableLow,X
-        sta wavesFormationLow
-        lda wavesTableHigh,X
-        sta wavesFormationHigh
+        sta shieldRecover
+        inc shieldRecover
 
-        ; reset
-        lda #MenuGameOver
-        sta screenColumn
-        lda #False
-        sta flowPaused
+        lda wavesLevelTable,X
+        sta wavesLevelIndex
 
-        jsr gameFlowResetScore
-        jsr gameFlowResetBullets
-        jsr gameAliensReset
-        jsr gamePlayerReset
-        jsr libMusicInit
+        mva #0, aliensCountWaves
+        lda vicMode
+        bne gFSLPal
+        lda ntscSpeedTableLow,X
+        sta speedTableLow
+        lda ntscSpeedTableHigh,X
+        sta speedTableHigh
+        rts
 
-        ; change state
-        lda #FlowStateAlive
-        sta flowState
+gFSLPal
+        lda palSpeedTableLow,X
+        sta speedTableLow
+        lda palSpeedTableHigh,X
+        sta speedTableHigh
+        rts
+
+;===============================================================================
+
+gameFlowAlienSprites
+        ldx flowStageCnt
+        lda stagesShooterStart,X
+        sta alienShooterStart
+        lda stagesShooterEnd,X
+        sta alienShooterEnd
+        lda stagesShooterColor,X
+        sta alienShooterColor
+        lda stagesProbeStart,X
+        sta alienProbeStart
+        lda stagesProbeEnd,X
+        sta alienProbeEnd
+        lda stagesProbeColor,X
+        sta alienProbeColor
+        lda stagesOrbColor,X
+        sta alienOrbColor
 
         rts
 
 ;===============================================================================
+
 gameFlowShowGameStatus
         jsr gameflowShieldGaugeFull
-
-        LIBSCREEN_DRAWTEXT_AAAV flowAmmoX, flowAmmoY, flowAmmoText, White
-        jsr gameflowBulletsDisplay
-
-        rts
+        LIBSCREEN_DRAWTEXT_AAAV #AmmoX, #StatusY, flowAmmoText, White
+        jsr gameflowBulletDisplay
+        jmp gameflowBombDisplay
 
 ;===============================================================================
+
 gameFlowUpdateAlive
-        jsr SCNKEY
-        jsr GETIN
-        cmp #0
-        beq gFUAReturn
+        lda flowPaused
+        bne gFUAScanKey
+        ldy frame
+        lda (speedTableLow),Y
+        sta aliensStep
+        iny
+        cpy #FramesMax
+        beq gFPReset
+        jmp gFPDone
+
+gFPReset
+        ldy #0
+
+gFPDone
+        sty frame
+
+gFUAScanKey
+        jsr libInputKeys
+        bne gFUACheckKey
+        rts
+
+gFUACheckKey
         cmp #KEY_SPACE
         beq gFUAPause
         cmp #KEY_M
-        beq gFUAMusic
-        cmp #KEY_S
-        jsr gameMenuSfxSwitch
-        beq gFUAReturn
-        jmp gFUADisable
+        beq gFUAMute
+        rts
+
 gFUAPause
         lda flowPaused
-        beq gFUAPlay
+        bne gFUAPlay
+        LIBSCREEN_DRAWTEXT_AAAV #PauseTextX, #PauseTextY, gamePauseText, Yellow
         inc flowPaused
-        jmp gFUAReturn
+        jmp libSoundInit
+
 gFUAPlay
+        GAMESTARS_COPYMAPROW_V PauseTextY
         dec flowPaused
-        jmp gFUADisable
-gFUAMusic
-        jsr gameMenuMusicSwitch
+        jmp libSoundInit
+
+gFUAMute
+        jsr gameFlowMuteSwitch
         beq gFUAReturn
-gFUADisable
-        jsr libSoundInit
+        jmp libSoundInit
+
 gFUAReturn
         rts
 
 ;===============================================================================
+
+gameFlowMuteSwitch
+        lda flowMute
+        beq gFMSMute
+        lda #0
+        jmp gFMSDone
+
+gFMSMute
+        lda #1
+
+gFMSDone
+        sta flowMute
+        sta soundDisabled
+        sta sidDisabled
+        sta musicOff
+        rts
+
+;===============================================================================
+
 gameFlowUpdateDying
-        LIBSPRITE_ISANIMPLAYING_A playerSprite
-        bne gFUDEnd
+        lda playerFlyUp
+        beq gFUDExploding
+        mva #GameOverDelay, time1
+        mva #1, time2
+        mva #0, playerFlyUp
+        rts
 
+gFUDExploding
+        LIBMPLEX_ISANIMPLAYING_A #ExplodeSprite
+        beq gFUDDelay
+        mva #GameOverDelay, time1
+        mva #1, time2
+        rts
+
+gFUDDelay
+        lda time2
+        cmp #1
+        bne gFUDDecrease
         jsr libMultiplexReset
-        jsr gameFlowClearStatusLine
-        jsr gameFlowResetGameOverTime
+        jsr gameMenuClearScreen
 
+gFUDDecrease
+        jsr gameFlowDecreaseTime
+        beq gFUDMenu
+        rts
+
+gFUDMenu
+        jsr gameMenuClearText
+        jsr gameFlowResetGameOverTime
         ; change state
         lda #FlowStateMenu
         sta flowState
+        jsr gameMenuShowLogo
         jsr gameMenuShowText
         jsr gameMenuShowStats
-gFUDEnd
-        rts
+        jsr gameMenuShowBorder
+        jmp gameMenuCursorDisplay
 
 ;===============================================================================
-gameFlowClearStatusLine
 
-        LIBSCREEN_DRAWTEXT_AAAV flowGaugeX, flowGaugeY, flowGaugeClear, White
-        LIBSCREEN_DRAWTEXT_AAAV flowAmmoX, flowAmmoY, flowAmmoClear, White
-
-        rts
-
-;===============================================================================
-gameFlowUpdate
-
-        ; get the current state
-        ldy flowState 
-
-        ; write the subroutine address to a zeropage location
-        lda gameFlowJumpTableLow,y
-        sta ZeroPageLow
-        lda gameFlowJumpTableHigh,y
-        sta ZeroPageHigh
-
-        ; jump to the subroutine the zeropage location points to
-        jmp (ZeroPageLow)
-
-;===============================================================================
 gameFlowIncreaseScore
-        
         sed             ;set decimal mode
         clc
         lda aliensScore ;points scored
         adc score1      ;ones and tens
         sta score1
         lda score2      ;hundreds and thousands
-        adc #00
+        adc #$00
         sta score2
         lda score3      ;ten-thousands and hundred-thousands
-        adc #00
+        adc #$00
         sta score3
         clc
-        lda #1          ;alien destroyed
+        lda #$01        ;alien destroyed
         adc aliens1     ;ones and tens
         sta aliens1
         lda aliens2     ;hundreds and thousands
-        adc #00
+        adc #$00
         sta aliens2
         cld             ;clear decimal mode
-
-        jsr gameFlowScoreDisplay
-
-        rts
+        jmp gameFlowScoreDisplay
 
 ;===============================================================================
+
 gameFlowResetScore
-        
         lda #0
         sta score1
         sta score2
         sta score3
         sta statsHiScore
-
-        jsr gameFlowScoreDisplay 
-
-        rts
+        sta medalUnlocked
+        sta shipUnlocked
+        jmp gameFlowScoreDisplay
 
 ;===============================================================================
+
 gameFlowResetScreenTime
-
-        lda #$60
-        sta time1
-
-        lda #ScreenTime
+        mva cycles, time1
+        lda flowMenuTimes,Y
         sta time2
         rts
 
 ;===============================================================================
+
 gameFlowResetGameOverTime
-
-        lda #$60
-        sta time1
-
-        lda #GameOverTime
-        sta time2
+        mva cycles, time1
+        mva #GameOverTime, time2
         rts
 
 ;===============================================================================
+
 gameFlowResetMsgTime
-
-        lda #$60
-        sta time1
-
-        lda #MessageTime
-        sta time2
+        mva cycles, time1
+        mva #MessageTime, time2
         rts
 
 ;===============================================================================
-gameFlowDecreaseTime
 
+gameFlowDecreaseTime
         lda time2
         beq gFDTDone
-
-        sed             ;set decimal mode
+        sed             ; set decimal mode
         sec             ; sec is the same as clear borrow
         lda time1       ; Get first number
-        sbc #1          ; Subtract 1
+        sbc #$01        ; Subtract 1
         sta time1       ; Store in first number
         lda time2       ; Get 2nd first number
-        sbc #0          ; Subtract borrow
+        sbc #$00        ; Subtract borrow
         sta time2       ; Store 2nd number
-        cld              ;clear decimal mode
+        lda time1
+        cmp #$99
+        bne gFDTContinue
+        lda cycles      ; 60 NTSC / 50 PAL
+        sta time1
+gFDTContinue
+if SHOWTIMER = 1
+        jsr gameFlowTimeDisplay
+endif
+        cld             ; clear decimal mode
 
 gFDTDone
         rts
 
 ;===============================================================================
+
 gameFlowAddBullet
-        
         ; Check if Ammo reached 99 (maximum)
         lda bullets
         cmp #$99
         beq gFABDone
-
         sed             ;set decimal mode
         clc
-        lda #1          ;1 bullet added
+        lda #$01        ;1 bullet added
         adc bullets
         sta bullets
         clc
-        lda #1          ;add to statistics
+        lda #$01        ;add to statistics
         adc bullets1    ;ones and tens
         sta bullets1
         lda bullets2    ;hundreds and thousands
-        adc #00
+        adc #$00
         sta bullets2
         cld             ;clear decimal mode
-
-        jsr gameflowBulletsDisplay
+        lda fullMode
+        bne gFABDone
+        jmp gameflowBulletDisplay
 
 gFABDone
         rts
 
 ;===============================================================================
+
 gameFlowUseBullet
-        
         sed             ;set decimal mode
         sec
         lda bullets
-        sbc #1          ;1 bullet used
+        sbc #$01        ;1 bullet used
         sta bullets
         cld             ;clear decimal mode
+        jmp gameflowBulletDisplay
 
-        jsr gameflowBulletsDisplay
+;===============================================================================
 
+gameFlowAddBomb
+        ; Check if Ammo reached 99 (maximum)
+        lda bombs
+        cmp #$99
+        beq gFBBDone
+        sed             ;set decimal mode
+        clc
+        lda #$01        ;1 bullet added
+        adc bombs
+        sta bombs
+        clc
+        lda #$01        ;add to statistics
+        adc bombs1      ;ones and tens
+        sta bombs1
+        lda bombs2      ;hundreds and thousands
+        adc #$00
+        sta bombs2
+        cld             ;clear decimal mode
+        jmp gameflowBombDisplay
+
+gFBBDone
         rts
 
 ;===============================================================================
+
+gameFlowUseBomb
+        sed             ;set decimal mode
+        sec
+        lda bombs
+        sbc #$01        ;1 bomb used
+        sta bombs
+        cld             ;clear decimal mode
+        jmp gameflowBombDisplay
+
+;===============================================================================
+
 gameFlowUpdateGauge
-        
         sed             ;set decimal mode
         clc
-        lda #0
+        lda #$00
         adc shieldEnergy
         sta energy
         cld             ;clear decimal mode
@@ -553,43 +804,49 @@ gameFlowUpdateGauge
         bcs gFUGHigher
         sta lastEnergy
         jsr gameflowShieldGaugeDecrease
-        jmp gFUGDone
+        rts
+
 gFUGHigher
         sta lastEnergy
         beq gFUGDone
-        jsr gameflowShieldGaugeIncrease
+        jmp gameflowShieldGaugeIncrease
+
 gFUGDone
         rts
 
 ;===============================================================================
-gameFlowResetBullets
 
-        lda #0
+gameFlowResetAmmo
+        lda #$00
         sta bullets
         sta bullets1
         sta bullets2
+        sta bombs
+        sta bombs1
+        sta bombs2
         sta aliens1
         sta aliens2
-
-        jsr gameflowBulletsDisplay
+        jsr gameflowBulletDisplay
+        jsr gameflowBombDisplay
         jsr gameBulletsReset
-
-        rts
+        jmp gameBomberReset
 
 ;===============================================================================
-gameFlowPlayerDied
 
+gameFlowGameOver
         jsr gameBulletsReset ; stops in flight bullets from scoring
+        jsr gameBombsReset
         jsr gameFlowUpdateHiScore
-        jsr gameflowBulletsDisplay
-
+        jsr gameFlowUnlockShips
+        jsr gameflowBulletDisplay
+        jsr gameflowBombDisplay
         ; change state
         lda #FlowStateDying
         sta flowState
-
         rts
 
 ;===============================================================================
+
 gameFlowUpdateHiScore
         ; Do not update if same score
         lda score1
@@ -612,98 +869,146 @@ gFUCheckHi
         lda score3
         sbc hiscore3
         bcc gFUHNotHi
-
-        lda score1
-        sta hiscore1
-        lda score2
-        sta hiscore2
+        mva score1, hiscore1
+        mva score2, hiscore2
+        mva score3, hiscore3
+        ldx levelNum
+        ldy hiScoresOffset,X
         lda score3
-        sta hiscore3
-        
-        lda #True
-        sta statsHiScore
-
-        jsr gameFlowHiScoreDisplay
+        sta HISCORES,Y
+        iny
+        lda score2
+        sta HISCORES,Y
+        iny
+        lda score1
+        sta HISCORES,Y
+        mva #True, statsHiScore
+        jmp gameFlowHiScoreDisplay
 
 gFUHNotHi
         rts
 
 ;===============================================================================
+
+gameFlowUnlockShips
+        lda score3
+        bne gFUSUnlock
+        lda score2
+        cmp #10
+        bcs gFUSUnlock
+        rts
+
+gFUSUnlock
+        ldx levelNum
+        inx                     ; align with ship lock mask array
+        lda unlockFlags
+        and shipLockMask,X
+        bne gFUSDone            ; ship already unlocked
+        inc shipUnlocked        ; set flag to display message
+        lda unlockFlags
+        ora shipLockMask,X
+        sta unlockFlags
+
+gFUSDone
+        rts
+
+;===============================================================================
+
 gameFlowScoreDisplay
-
-        LIBMATH_ADD8BIT_AVA flowScoreX, 6, flowScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowScoreNumX, flowScoreY, score3, White
-
-        LIBMATH_ADD8BIT_AVA flowScoreX, 8, flowScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowScoreNumX, flowScoreY, score2, White
-
-        LIBMATH_ADD8BIT_AVA flowScoreX, 10, flowScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowScoreNumX, flowScoreY, score1, White
-
+        LIBSCREEN_DRAWDECIMAL_AAAVV #ScoreValX, #ScoreY, score3, White, 3
         rts
 
 ;===============================================================================
+
 gameFlowHiScoreDisplay
-
-        LIBMATH_ADD8BIT_AVA flowHiScoreX, 3, flowHiScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowHiScoreNumX, flowHiScoreY, hiscore3, White
-
-        LIBMATH_ADD8BIT_AVA flowHiScoreX, 5, flowHiScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowHiScoreNumX, flowHiScoreY, hiscore2, White
-
-        LIBMATH_ADD8BIT_AVA flowHiScoreX, 7, flowHiScoreNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowHiScoreNumX, flowHiScoreY, hiscore1, White
-
+        LIBSCREEN_DRAWDECIMAL_AAAVV #HiScoreX+3, #ScoreY, hiscore3, White, 3
         rts
 
 ;===============================================================================
-gameflowBulletsDisplay
+; Debug routine to display timer
+if SHOWTIMER = 1
+gameFlowTimeDisplay
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+3, #ScoreY, #$00, White
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+5, #ScoreY, time2, White
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+7, #ScoreY, time1, White
+        lda time2
+        rts
+endif
+;===============================================================================
 
-        LIBMATH_ADD8BIT_AVA flowAmmoX, 5, flowAmmoNumX
-        LIBSCREEN_DRAWDECIMAL_AAAV flowAmmoNumX, flowAmmoY, bullets, White
-
+gameFlowFullAmmoDisplay
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX, #StatusY
+        LIBSCREEN_SETCHAR_V InfinityChar
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX, #StatusY
+        LIBSCREEN_SETCHAR_V Green
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+1, #StatusY
+        LIBSCREEN_SETCHAR_V InfinityChar+1
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+1, #StatusY
+        LIBSCREEN_SETCHAR_V Green
         rts
 
 ;===============================================================================
-gameflowShieldGaugeFull
-        LIBSCREEN_DRAWTEXT_AAAV flowGaugeX, flowGaugeY, flowGaugeFull, White
-        LIBSCREEN_DRAWTEXT_AAAA flowGaugeBarX, flowGaugeY, flowGaugeBar, shieldColor
+
+gameFlowBulletDisplay
+        LIBSCREEN_DRAWDECIMAL_AAAV #AmmoValX, #StatusY, bullets, White
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+2, #StatusY
+        LIBSCREEN_SETCHAR_V BulletColor
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+2, #StatusY
+        LIBSCREEN_SETCHAR_V Bullet1stCharUp+3
         rts
 
 ;===============================================================================
-gameflowShieldGaugeDecrease
+
+gameFlowBombDisplay
+        LIBSCREEN_DRAWDECIMAL_AAAV #AmmoValX+3, #StatusY, bombs, White
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+5, #StatusY
+        LIBSCREEN_SETCHAR_V BombColor
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+5, #StatusY
+        LIBSCREEN_SETCHAR_V MissileUpChr
+        rts
+
+;===============================================================================
+
+gameFlowShieldGaugeFull
+        LIBSCREEN_DRAWTEXT_AAAV #GaugeX, #StatusY, flowGaugeFull, White
+        LIBSCREEN_DRAWTEXT_AAAA #GaugeBarX, #StatusY, flowGaugeBar, shieldColor
+        rts
+
+;===============================================================================
+
+gameFlowShieldGaugeDecrease
         lda shieldEnergy
         cmp #ShieldMaxEnergy
         bcs gFSGDGauge
-        LIBSCREEN_DRAWTEXT_AAA flowGaugeX, flowGaugeY, flowGaugeSpc
+        LIBSCREEN_DRAWTEXT_AAA #GaugeX, #StatusY, flowGaugeSpc
 
 gFSGDGauge
-        LIBSCREEN_DRAWDECIMAL_AAA flowGaugeOneX, flowGaugeY, energy
+        LIBSCREEN_DRAWDECIMAL_AAA #GaugeX+1, #StatusY, energy
 
         lda shieldEnergy
         jsr libMathDivideByTen
         clc
-        adc flowGaugeBarX
+        adc #GaugeBarX
         sta flowGaugeChrX
 
-        LIBSCREEN_DRAWTEXT_AAA flowGaugeChrX, flowGaugeY, flowGaugeSpc
+        LIBSCREEN_DRAWTEXT_AAA flowGaugeChrX, #StatusY, flowGaugeSpc
 
         ldy shieldEnergy
         cpy #50
         bcs gFSGDReturn
 
         jsr gameflowSelectGaugeColor
-        LIBSCREEN_COLORTEXT_AAAV flowGaugeBarX, flowGaugeY, flowGaugeClr, 4
+        LIBSCREEN_COLORTEXT_AAAV #GaugeBarX, #StatusY, flowGaugeClr, 4
 
 gFSGDReturn
         rts
 
 ;===============================================================================
-gameflowShieldGaugeIncrease
+
+gameFlowShieldGaugeIncrease
         lda shieldEnergy
         cmp #ShieldMaxEnergy
         bcc gFSGINoHundred
-
         lda #OneCharacter
         jmp gFSGIGauge
 
@@ -712,41 +1017,42 @@ gFSGINoHundred
 
 gFSGIGauge
         sta flowGaugeTxt
-        LIBSCREEN_DRAWTEXT_AAA flowGaugeX, flowGaugeY, flowGaugeTxt
-        LIBSCREEN_DRAWDECIMAL_AAA flowGaugeOneX, flowGaugeY, energy
-
+        LIBSCREEN_DRAWTEXT_AAA #GaugeX, #StatusY, flowGaugeTxt
+        LIBSCREEN_DRAWDECIMAL_AAA #GaugeX+1, #StatusY, energy
         lda shieldEnergy
         jsr libMathDivideByTen
         beq gFSGIReturn
         clc
-        adc flowGaugeBarX
+        adc #GaugeBarX
         sta flowGaugeChrX
         dec flowGaugeChrX
 
-        LIBSCREEN_DRAWTEXT_AAAA flowGaugeChrX, flowGaugeY, flowGaugeChr, shieldColor
+        LIBSCREEN_DRAWTEXT_AAAA flowGaugeChrX, #StatusY, flowGaugeChr, shieldColor
 
         ldy shieldEnergy
         cpy #50
         bcs gFSGIReturn
-
         jsr gameflowSelectGaugeColor
-        LIBSCREEN_COLORTEXT_AAAV flowGaugeBarX, flowGaugeY, flowGaugeClr, 4
+        LIBSCREEN_COLORTEXT_AAAV #GaugeBarX, #StatusY, flowGaugeClr, 4
 
 gFSGIReturn
         rts
 
 ;===============================================================================
-gameflowSelectGaugeColor
+
+gameFlowSelectGaugeColor
         cpy #45         ; if shield is critically low change color to red
         bcc gFSGCRed
-        lda shieldColor
-        sta flowGaugeClr
-        jmp gFSGCDone
-
-gFSGCRed
-        lda #Red
-        sta flowGaugeClr
-
-gFSGCDone
+        mva shieldColor, flowGaugeClr
         rts
 
+gFSGCRed
+        mva #Red, flowGaugeClr
+        rts
+
+;===============================================================================
+
+gameFlowEndMessage
+        LIBSCREEN_DRAWTEXT_AAAV #GameEndX,  #GameEndY, gameEndText1, LightGreen
+        LIBSCREEN_DRAWTEXT_AAAV #GameEndX, #GameEndY+2, gameEndText2, Cyan
+        rts

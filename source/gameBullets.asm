@@ -1,8 +1,8 @@
 ;===============================================================================
 ;  gameBullets.asm - Bullets control module
 ;
-;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017 RetroGameDev - <https://www.retrogamedev.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -10,43 +10,49 @@
 ;===============================================================================
 ; Constants
 
-BulletsMax              = 12
-BulletsAliens           = 10
-Bullet1stCharDown       = 64
-Bullet1stCharUp         = 72
-BulletFlameOffset       = 89
+BulletsMax          = 12
+BulletsAliens       = 10
+Bullet1stCharDown   = 112
+Bullet1stCharUp     = 120
+BulletLeftOffset    = 3
+BulletRightOffset   = 5
+BulletLeftEdge      = Bullet1stCharDown + BulletLeftOffset
+BulletRightEdge     = Bullet1stCharDown + BulletRightOffset
+BulletFlameOffset   = 16
+BulletColor         = Yellow
 
 ;===============================================================================
 ; Page Zero
 
-bulletsXCharCol         = $7E
-bulletsYCharCol         = $7F
+ammoXCharCol        = $7E
+ammoXOffsetCol      = $7F
+ammoYCharCol        = $80
 
-bulletsXCharCurrent     = $80
-bulletsXOffsetCurrent   = $81
-bulletsYCharCurrent     = $82
-bulletsCharCurrent      = $83
-bulletsColorCurrent     = $84
-bulletsDirCurrent       = $85
-bulletsXFlag            = $86
-bulletsDirCol           = $87
-bulletsUpdCnt           = $88
-bulletsIndex            = $89
-bulletsActiveTotal      = $8A
-bulletsActiveUp         = $8B
-bulletsActiveDown       = $8C
+ammoXCharCurrent    = $81
+ammoXOffsetCurrent  = $82
+ammoYCharCurrent    = $83
+ammoCharCurrent     = $84
+ammoColorCurrent    = $85
+
+bulletsDirCurrent   = $86
+bulletsDirCol       = $87
+bulletsUpdCnt       = $88
+bulletsIndex        = $89
+bulletsActiveTotal  = $8A
+bulletsActiveUp     = $8B
+bulletsActiveDown   = $8C
 
 ;===============================================================================
 ; Variables
 
-bulletsActive           dcb BulletsMax, 0
-bulletsXChar            dcb BulletsMax, 0
-bulletsYChar            dcb BulletsMax, 0
-bulletsXOffset          dcb BulletsMax, 0
-bulletsDir              dcb BulletsMax, 0
+bulletsActive       dcb BulletsMax, 0
+bulletsXChar        dcb BulletsMax, 0
+bulletsYChar        dcb BulletsMax, 0
+bulletsXOffset      dcb BulletsMax, 0
+bulletsDir          dcb BulletsMax, 0
 
-bulletSpeedArray        byte 3, 4, 4, 6    ; 12/4=3 (slower) 12/6=2 (faster)
-bulletSpeed             byte 0
+bulletSpeedArray    byte 3, 4, 4, 6  ; 12/3=4(slow) 12/4=3(medium) 12/6=2(fast)
+bulletSpeed         byte 0
 
 ;===============================================================================
 ; Macros/Subroutines
@@ -89,6 +95,7 @@ defm    GAMEBULLETS_FIRE_UP_AAA      ; /1 = XChar            (Address)
         endm
 
 ;===============================================================================
+
 defm    GAMEBULLETS_FIRE_DOWN_AAA    ; /1 = XChar            (Address)
                                      ; /2 = XOffset          (Address)
                                      ; /3 = YChar            (Address)
@@ -126,30 +133,51 @@ defm    GAMEBULLETS_FIRE_DOWN_AAA    ; /1 = XChar            (Address)
 @found
         endm
 
+
 ;===============================================================================
-gameBulletsGet
-        lda bulletsDir,X
-        sta bulletsDirCurrent
-        lda bulletsXChar,X
-        sta bulletsXCharCurrent
-        ldy bulletsXOffset,X
-        sty bulletsXOffsetCurrent
-        lda bulletsYChar,X
-        sta bulletsYCharCurrent
-        lsr A
-        bcc gBGEvenLine
-        jmp gBGDone
-gBGEvenLine
-        clc
-        tya
-        adc #BulletFlameOffset
-        sta bulletsXOffsetCurrent
-gBGDone
-        rts
+
+defm    GAMEBULLETS_COLLIDED_UP_AA      ; /1 = XChar (Address)
+                                        ; /2 = YChar (Address)
+        lda bulletsActiveUp
+        beq @exit
+
+        lda #True
+        sta bulletsDirCol
+        lda /1
+        sta ammoXCharCol
+        lda /2
+        sta ammoYCharCol
+        jsr gameBulletsCollided
+@exit
+        endm
+
+;===============================================================================
+
+defm    GAMEBULLETS_COLLIDED_DOWN_AAA    ; /1 = XChar   (Address)
+                                         ; /2 = XOffset (Address)
+                                         ; /3 = YChar   (Address)
+        lda bulletsActiveDown
+        beq @exit
+        lda #False
+        sta bulletsDirCol
+        lda /1
+        sta ammoXCharCol
+        lda /3
+        sta ammoYCharCol
+        lda shieldActive
+        beq @offset
+        jsr gameBulletsCollided
+        jmp @exit
+@offset
+        lda /2
+        sta ammoXOffsetCol
+        jsr gameBulletsCollidedOffset
+@exit
+        endm
 
 ;==============================================================================
-gameBulletsReset
 
+gameBulletsReset
         ldx #0
 
 gBRLoop
@@ -158,7 +186,7 @@ gBRLoop
 
         ; remove the bullet from the screen
         jsr gameBulletsGet
-        jsr gameBulletsClear
+        jsr gameAmmoClear
 
         lda #0
         sta bulletsActive,x
@@ -172,206 +200,263 @@ gBRSkip
         sta bulletsActiveTotal
         sta bulletsIndex
         sta bulletsUpdCnt
-
         rts
 
 ;===============================================================================
+
 gameBulletsUpdate
+        lda bulletsActiveTotal
+        bne gBUStart
+        rts
+gBUStart
         ldx bulletsIndex
 
-buloop
+gBULoop
         lda bulletsActive,X
-        bne buok
-        jmp skipBulletUpdate
+        bne gBUOk
+        jmp gBUNext
 
-buok
+gBUOk
         ; get the current bullet from the list
         jsr gameBulletsGet
-        jsr gameBulletsClear
-        
         lda bulletsDirCurrent
-        beq @down
+        beq gBUDown
 
-@up
-        ldy bulletsYCharCurrent
+gBUUp
+        ldy ammoYCharCurrent
         dey
-        sty bulletsYCharCurrent
-        cpy #0; this leave a row empty at the top for the scores
-        bne @draw
+        sty ammoYCharCurrent
+        ; this leave a row empty at the top for the scores
+        bne gBUDraw
         dec bulletsActiveUp
-        jmp @dirdone
+        jmp gBUDone
 
-@down
-        ldy bulletsYCharCurrent
+gBUDown
+        ldy ammoYCharCurrent
         iny
-        sty bulletsYCharCurrent
-        cpy #24; Ignore the bottom row to not erase the gauge and ammo
-        bne @draw
+        sty ammoYCharCurrent
+        ; Ignore the bottom row to not erase the gauge and ammo
+        cpy #StatusY
+        bne gBUDraw
         dec bulletsActiveDown
 
-@dirdone
+gBUDone
         lda #0
         sta bulletsActive,X
         dec bulletsActiveTotal
-        jmp skipBulletUpdate        
+        jmp gBUNext
 
-@draw
+gBUDraw
         ; set the bullet color
-        LIBSCREEN_SETCOLORPOSITION_AA bulletsXCharCurrent, bulletsYCharCurrent
-        LIBSCREEN_SETCHAR_V Yellow
+        LIBSCREEN_SETCOLORPOSITION_AA ammoXCharCurrent, ammoYCharCurrent
+        LIBSCREEN_SETCHAR_V BulletColor
         
         ; set the bullet character
-        LIBSCREEN_SETCHARPOSITION_AA bulletsXCharCurrent, bulletsYCharCurrent
-        LIBSCREEN_SETCHAR_A bulletsXOffsetCurrent
+        LIBSCREEN_SETCHARPOSITION_AA ammoXCharCurrent, ammoYCharCurrent
+        LIBSCREEN_SETCHAR_A ammoXOffsetCurrent
 
-        lda bulletsYCharCurrent
+        lda ammoYCharCurrent
         sta bulletsYChar,X
 
-skipBulletUpdate
+gBUNext
         inx
+        cpx #BulletsMax
+        bcs gBUZero
         inc bulletsUpdCnt
         lda bulletsUpdCnt
         cmp bulletSpeed
-        bcc buloop
-        cpx #BulletsMax
-        bcc finishBulletUpdate
+        bcc gBULoop
+        jmp gBUFinish
 
-countBulletUpdate
+gBUZero
         ldx #0
 
-finishBulletUpdate
+gBUFinish
         stx bulletsIndex
-        lda #0
-        sta bulletsUpdCnt
+        mva #0, bulletsUpdCnt
         rts
 
 ;===============================================================================
-defm    GAMEBULLETS_COLLIDED_UP_AA      ; /1 = XChar (Address)
-                                        ; /2 = YChar (Address)
-        lda bulletsActiveUp
-        beq @exit
 
-        lda #True
-        sta bulletsDirCol
-        lda /1
-        sta bulletsXCharCol
-        lda /2
-        sta bulletsYCharCol
-        jsr gameBulletsCollided
-@exit
-        endm
+gameBulletsGet
+        lda bulletsDir,X
+        sta bulletsDirCurrent
+        lda bulletsXChar,X
+        sta ammoXCharCurrent
+        ldy bulletsXOffset,X
+        sty ammoXOffsetCurrent
+        lda bulletsYChar,X
+        sta ammoYCharCurrent
+        lsr A
+        bcs gameAmmoClear
 
-;===============================================================================
-defm    GAMEBULLETS_COLLIDED_DOWN_AA    ; /1 = XChar (Address)
-                                        ; /2 = YChar (Address)
-        lda bulletsActiveDown
-        beq @exit
-
-        lda #False
-        sta bulletsDirCol
-        lda /1
-        sta bulletsXCharCol
-        lda /2
-        sta bulletsYCharCol
-        jsr gameBulletsCollided
-@exit
-        endm
+gBGEvenLine
+        clc
+        tya
+        adc #BulletFlameOffset
+        sta ammoXOffsetCurrent
 
 ;===============================================================================
+; Don't move needs to be after gameBulletsGet
+gameAmmoClear
+        GAMESTARS_GETCOLOR_AAA ammoXCharCurrent, ammoYCharCurrent, ammoColorCurrent
+
+        LIBSCREEN_SETCOLORPOSITION_AA ammoXCharCurrent, ammoYCharCurrent
+        LIBSCREEN_SETCHAR_A ammoColorCurrent
+
+        GAMESTARS_GETCHAR_AAA ammoXCharCurrent, ammoYCharCurrent, ammoCharCurrent
+
+        LIBSCREEN_SETCHARPOSITION_AA ammoXCharCurrent, ammoYCharCurrent
+        LIBSCREEN_SETCHAR_A ammoCharCurrent
+        rts
+
+;===============================================================================
+
 gameBulletsCollided
-
         ldx #0
-@loop
+gBCLoop
         ; skip this bullet if not active
         lda bulletsActive,X
-        beq @skip
+        beq gBCSkip
 
         ; skip if up/down not equal
         lda bulletsDir,X
         cmp bulletsDirCol
-        bne @skip
+        bne gBCSkip
 
         ; skip if currentbullet YChar != YChar
         ldy bulletsYChar,X
-        cpy bulletsYCharCol
-        bne @yminus1
-        jmp @checkx
+        cpy ammoYCharCol
+        beq gBCCheckX
 
-@yminus1
-        ; skip if currentbullet XChar-1 != XChar
+gBCYMinus1
+        ; skip if currentbullet YChar-1 != YChar
         dey
-        cpy bulletsYCharCol
-        bne @skip
+        cpy ammoYCharCol
+        bne gBCSkip
 
-@checkx
-        lda #0
-        sta bulletsXFlag
-
+gBCCheckX
         ; skip if currentbullet XChar != XChar
         ldy bulletsXChar,X
-        cpy bulletsXCharCol
-        bne @xminus1
-        lda #1
-        sta bulletsXFlag
-        jmp @doneXCheck
+        cpy ammoXCharCol
+        beq gBCCollided
 
-@xminus1
+gBCXMinus1
         ; skip if currentbullet XChar-1 != XChar
         dey
-        cpy bulletsXCharCol
-        bne @xplus1
-        lda #1
-        sta bulletsXFlag
-        jmp @doneXCheck
-@xplus1
+        cpy ammoXCharCol
+        beq gBCCollided
+
+gBCXPlus1
         ; skip if currentbullet XChar+1 != XChar
         iny
         iny
-        cpy bulletsXCharCol
-        bne @doneXCheck
-        lda #1
-        sta bulletsXFlag
+        cpy ammoXCharCol
+        bne gBCSkip
 
-@doneXCheck
-        lda bulletsXFlag
-        beq @skip
-   
-        ; collided
+gBCCollided
         lda #0
         sta bulletsActive,X ; disable bullet
         dec bulletsActiveTotal
 
         ; delete bullet from screen
         lda bulletsXChar,X
-        sta bulletsXCharCurrent
+        sta ammoXCharCurrent
         lda bulletsYChar,X
-        sta bulletsYCharCurrent
-        jsr gameBulletsClear
-        lda #1 ; set as collided
-        jmp @collided
-@skip
+        sta ammoYCharCurrent
+        jsr gameAmmoClear
+        ; set A to notify collision and return
+        lda #True
+        rts
+
+gBCSkip
         ; loop for each bullet
         inx
         cpx #BulletsMax
-        bne @loop
+        bne gBCLoop
 
         ; set as not collided
-        lda #0
-
-@collided
-
+        lda #False
         rts
 
 ;===============================================================================
-gameBulletsClear
-        GAMESTARS_GETCOLOR_AAA bulletsXCharCurrent, bulletsYCharCurrent, bulletsColorCurrent
 
-        LIBSCREEN_SETCOLORPOSITION_AA bulletsXCharCurrent, bulletsYCharCurrent
-        LIBSCREEN_SETCHAR_A bulletsColorCurrent
+gameBulletsCollidedOffset
+        ldx #0
+gBCOLoop
+        ; skip this bullet if not active
+        lda bulletsActive,X
+        beq gBCOSkip
 
-        GAMESTARS_GETCHAR_AAA bulletsXCharCurrent, bulletsYCharCurrent, bulletsCharCurrent
+        ; skip if up/down not equal
+        lda bulletsDir,X
+        cmp bulletsDirCol
+        bne gBCOSkip
 
-        LIBSCREEN_SETCHARPOSITION_AA bulletsXCharCurrent, bulletsYCharCurrent
-        LIBSCREEN_SETCHAR_A bulletsCharCurrent
+        ; skip if currentbullet YChar != YChar
+        ldy bulletsYChar,X
+        cpy ammoYCharCol
+        beq gBCOCheckX
 
+gBCOYMinus1
+        ; skip if currentbullet YChar-1 != YChar
+        dey
+        cpy ammoYCharCol
+        bne gBCOSkip
+
+gBCOCheckX
+        ; skip if currentbullet XChar != XChar
+        ldy bulletsXChar,X
+        cpy ammoXCharCol
+        beq gBCOCollided
+
+gBCOXMinus1
+        ; skip if currentbullet XChar-1 != XChar
+        dey
+        cpy ammoXCharCol
+        bne gBCOXPlus1
+        lda ammoXOffsetCol
+        cmp #BulletRightOffset
+        bcs gBCOCollided
+        lda bulletsXOffset,X
+        cmp #BulletLeftEdge
+        bcc gBCOCollided
+        jmp gBCOSkip
+
+gBCOXPlus1
+        ; skip if currentbullet XChar+1 != XChar
+        iny
+        iny
+        cpy ammoXCharCol
+        bne gBCOSkip
+        lda ammoXOffsetCol
+        cmp #BulletLeftOffset
+        bcc gBCOCollided
+        lda bulletsXOffset,X
+        cmp #BulletRightEdge
+        bcc gBCOSkip
+
+gBCOCollided
+        lda #0
+        sta bulletsActive,X ; disable bullet
+        dec bulletsActiveTotal
+
+        ; delete bullet from screen
+        lda bulletsXChar,X
+        sta ammoXCharCurrent
+        lda bulletsYChar,X
+        sta ammoYCharCurrent
+        jsr gameAmmoClear
+        ; set A to notify collision and return
+        lda #True
+        rts
+
+gBCOSkip
+        ; loop for each bullet
+        inx
+        cpx #BulletsMax
+        bne gBCOLoop
+
+        ; set as not collided
+        lda #False
         rts

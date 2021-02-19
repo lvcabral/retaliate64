@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameAliens.asm - Aliens control module
 ;
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -16,65 +16,101 @@ AliensYStart          = 15
 AliensYDelay          = 1
 AliensYPriorityTop    = 56
 AliensYPriorityBottom = 224
-AliensExplode         = 12      ; first frame # of the explosion animation
-AlienRed              = 5       ; Red alien frame #
-AlienShooter          = 6       ; Shooter alien frame #
+
+AlienShooter          = 0
+AlienMine             = 1
+AlienOrb              = 2
+AlienProbe            = 3
+Asteroid              = 4
+
+AlienBat              = 33
+AlienSquid            = AlienBat+2
+AlienPogo             = AlienBat+6
+AlienClamp            = AlienBat+10
+AlienHard             = 70
+AlienDamaged          = AlienHard+5
+AsteroidFrame         = 46
+
+AsteroidColor         = MediumGray
+AlienHardColor        = MediumGray
+AlienDamagedColor     = LightGray
+
+AnimaSpeed            = 7
 
 ;===============================================================================
 ; Page Zero
 
 aliensActive          = $20
-aliensStep            = $21
-aliensFrame           = $22
-aliensSprite          = $23
-aliensIndex           = $24
-aliensFire            = $25
-aliensY               = $26
+aliensCount           = $21
+aliensStep            = $22
+aliensType            = $23
+aliensSprite          = $24
+aliensIndex           = $25
+aliensFire            = $26
+aliensY               = $27
+aliensSpeed           = $28
+aliensRespawn         = $29
+aliensFireIndex       = $2A
+aliensXChar           = $2B
+aliensYChar           = $2C
+aliensXOffset         = $2D
+aliensXHigh           = $2E
+aliensXLow            = $2F
 
 ;===============================================================================
 ; Variables
 
-aliensCount           byte   0
-aliensCountRed        byte   0
+aliensNonShooters     byte   0
+aliensCountWaves      byte   0
 aliensColor           byte   0
 aliensActiveArray     dcb   AliensMax, 0
-aliensFrameArray      dcb   AliensMax, 0
+aliensTypeArray       dcb   AliensMax, 0
 aliensXHighArray      dcb   AliensMax, 0
-aliensXHigh           byte   0
 aliensXLowArray       dcb   AliensMax, 0
-aliensXLow            byte   0
 aliensXArray          byte  28,  52,  75,  98, 121, 144,  40,  64,  87, 110, 133
 aliensX               byte   0
 aliensYArray          dcb   AliensMax, AliensYStart
 aliensXCharArray      dcb   AliensMax, 0
-aliensXChar           byte   0
 aliensYCharArray      dcb   AliensMax, 0
-aliensYChar           byte   0
 aliensXOffsetArray    dcb   AliensMax, 0
-aliensXOffset         byte   0
+aliensXMoveIndexDef   byte 125, 120, 115,  20,  25,  25, 130,  80,  25,  35,  25
+aliensXMoveIndexArray dcb   AliensMax, 0
 aliensYFireArray      byte  60,  60,  63,  63,  60,  60,  90,  90,  93,  90,  90
 aliensFireArray       dcb   AliensMax, 0
-aliensFirePattern     byte  12,  12,  90,  90,  12,  12,  12,  90, 200, 200
-                      byte  12,  12,  12,  12,  90, 200,  90,  90,  90, 200
-                      byte  12,  90,  90,  90,  90, 200,  90, 200,  90, 200
-                      byte  12,  12,  12,  12,  12,  12,  12,  12,  12,  90
-                      byte  90,  12,  12,  12,  12,  12, 200,  90,  90, 200
-                      byte  12,  12,  90,  12,  12,  90,  12,  12,  12, 200
-                      byte  90,  12,  12,  12,  12,  12, 200,  90,  90, 200
-                      byte  12,  12,  12,  12,  12,  12,  12,  12,  12,  90
-                      byte  12,  12,  12,  12,  90, 200,  90,  90,  90, 200
-                      byte  90,  12,  12,  12,  12,  12, 200,  90,  90, 200
 aliensFireIndexArray  byte  13
                       dcb   AliensMax-1, 0
-aliensFireIndex       byte   0
 aliensRespawnArray    dcb   AliensMax, 0
-aliensRespawn         byte   0
 aliensPriority        byte   0
 aliensCollision       byte   0
 aliensScore           byte   0
-aliensSpeedArray      byte   2, 3, 4, 5
-aliensSpeed           byte   0
-rndSeed               byte   1
+alienFrameStart       byte   0
+alienFrameEnd         byte   0
+alienProbeStart       byte   0
+alienProbeEnd         byte   0
+alienProbeColor       byte   0
+alienOrbColor         byte   0
+alienShooterStart     byte   0
+alienShooterEnd       byte   0
+alienShooterColor     byte  Green
+
+aliensStepArray       dcb   AliensMax, 0
+asteroidsStartArray   byte  AsteroidFrame, AsteroidFrame+4, AsteroidFrame+8
+asteroidsEndArray     byte  AsteroidFrame+3, AsteroidFrame+7, AsteroidFrame+11
+
+rndSeed               byte   0
+
+;===============================================================================
+; Jump Tables
+
+ntscSpeedTableLow     byte  <ntscSpeedEasy, <ntscSpeedNormal
+                      byte  <ntscSpeedHard, <ntscSpeedExtreme
+ntscSpeedTableHigh    byte  >ntscSpeedEasy, >ntscSpeedNormal
+                      byte  >ntscSpeedHard, >ntscSpeedExtreme
+
+palSpeedTableLow      byte  <palSpeedEasy, <palSpeedNormal
+                      byte  <palSpeedHard, <palSpeedExtreme
+palSpeedTableHigh     byte  >palSpeedEasy, >palSpeedNormal
+                      byte  >palSpeedHard, >palSpeedExtreme
 
 ;==============================================================================
 ; Macros/Subroutines
@@ -82,8 +118,12 @@ rndSeed               byte   1
 gameAliensInit
         ; Calculate Aliens X high/low position tables
         ldx #0
+        stx asteroidsXMove
+        stx asteroidsDelay
+        stx aliensSprite
 
 gAILoop
+        inc aliensSprite
         lda aliensXArray,X
         sta aliensX
 
@@ -94,6 +134,8 @@ gAILoop
         lda aliensXLow
         sta aliensXLowArray,X
 
+        LIBMPLEX_MULTICOLORENABLE_AV aliensSprite, True
+
         ; loop for each alien
         inx
         cpx #AliensMax
@@ -103,177 +145,257 @@ gAILoop
 ;==============================================================================
 
 gameAliensReset
-        lda #0
+        ldx wavesIndex
+if STARTWAVE = 0
+        lda startWaveArray,X
+else
+        lda #STARTWAVE
+endif
         sta wavesIndex
-        sta wavesTimeIndex
-        jsr gameAliensWaveReset
-        rts
+        jsr gANWConfigWave      ; expects A containing # of the wave
+        jsr gameAliensInit
+        ; the next routine must be gameAliensWaveReset (don't move)
 
 ;==============================================================================
 
 gameAliensWaveReset
+        lda aliensCountWaves
+        cmp #AliensStageWaves
+        beq gAWRAsteroids
+        bcs gAWRStageEnd
+        lda flowStageCnt
+        cmp #LastStageCnt
+        beq gAWRLastStage
+        jmp gAWRStart
+
+gAWRStageEnd
+        inc flowStageCnt
+        inc flowStageIndex
+        ldy flowStageIndex
+        jmp gAWRNextStage
+
+gAWRLastStage
+        ; Last stage has only 1 wave
+        lda aliensCountWaves
+        bne gAWRGameOver
+        jmp gAWRStart
+
+gAWRGameOver
+        inc flowStageCnt
+        mva #GameEnd, playerFlyUp
+        LIBMATH_SUB8BIT_AVA playerY, PlayerVerticalSpeed, playerY
+        mva #FlyUpWaitTime, time2
+        jsr gameBulletsReset
+        jsr gameBombsReset
+        jmp gameFlowEndMessage
+
+gAWRAsteroids
+        mva aliensStep, asteroidsDelay
+        mva #True, asteroidsXMove
+        lda wavesIndex
+        lsr A
+        bcc gAWREven
+        mva #AsteroidsWave1, wavesIndex
+        jsr gANWConfigWave
+        jmp gAWRStart
+
+gAWREven
+        mva #AsteroidsWave2, wavesIndex
+        jsr gANWConfigWave
+        jmp gAWRStart
+
+gAWRNextStage
+        lda #False
+        sta asteroidsXMove
+        sta asteroidsDelay
+        mva #StageEnd, playerFlyUp
+        LIBMATH_SUB8BIT_AVA playerY, PlayerVerticalSpeed, playerY
+        ldx stagesLevelArray,Y
+        stx flowLevel
+        jsr gameFlowSkillLevel
+        jsr gameBulletsReset
+        jsr gameBombsReset
+        LIBSCREEN_DRAWTEXT_AAAV #StageEndX, #StageEndY, stageEndText, Cyan
+        inc stageNumChar
+        jsr gameFlowAlienSprites
+
+gAWRStart
+        ; Debug: Show Current Wave ID
+if SHOWWAVEID = 1
+        LIBSCREEN_DRAWHEX_AAAV #38, #0, wavesIndex, DarkGray
+endif
         ldx #0
         stx aliensSprite
-        stx aliensStep
         stx aliensCollision
         stx aliensCount
-        stx aliensCountRed
-gARLoop
+        stx aliensNonShooters
+        stx bomberTime
+        lda fullMode
+        beq gAWRLoop
+        dec fullMode
+        lda fullMode
+        bne gAWRLoop
+        jsr gameFlowBulletDisplay
+;-------------------------------------------------------------------------------
+gAWRLoop
         inc aliensSprite ; x+1
-
-        lda #False
-        sta aliensActive
-
+        mva #False, aliensActive
         lda aliensXHighArray,X
         sta aliensXHigh
-
         lda aliensXLowArray,X
         sta aliensXLow
-
-        lda #AliensYStart
-        sta aliensY
-
-        ldy wavesIndex
-        inc wavesIndex
-
+        mva #AliensYStart, aliensY
+        txy
         lda (wavesFormationLow),Y
         sta aliensRespawn
+        lda (wavesAliensLow),Y
+        ldy asteroidsXMove
+        bne gAWRSetAsteroid
+        jmp gAWRSetType
 
-        lda wavesFrameArray,Y
-        sta aliensFrame
-        beq gARNone
-        cmp #AlienRed
-        beq gARRed
-        lda #Green
-        jmp gARSetSprite
+gAWRSetAsteroid
+        ; Use asteroid formation as probe wave
+        lda #Asteroid
 
-gARRed
-        inc aliensCountRed
-        lda #LightRed
+gAWRSetType
+        sta aliensType
+        cmp #AlienShooter
+        beq gAWSetXPosition
+        inc aliensNonShooters
+        cmp #Asteroid
+        beq gAWAsteroids
+        cmp #AlienOrb
+        beq gAWSetOrb
+if MINESFROMSTART  = 0
+        ; Don't show Mines on first waves of the first stage
+        ldy flowStageCnt
+        bne gAWRSetStep
+        ldy aliensCountWaves
+        cpy #AliensStageWaves-2
+        bcs gAWRSetStep
+        mva #AlienProbe, aliensType
+endif
+gAWRSetStep
+        sta aliensStepArray,X
+        jmp gAWRSetSprite
+        
+gAWAsteroids
+        lda #0
+        sta aliensStepArray,X
+        jmp gAWRSetSprite
 
-gARSetSprite
-        sta aliensColor
-        stx aliensIndex; save X register as it gets trashed
+gAWSetOrb
+        sta aliensStepArray,X
+
+gAWSetXPosition
+        lda aliensXMoveIndexDef,X
+        sta aliensXMoveIndexArray,X
+
+gAWRSetSprite
+        ; save X register as it gets trashed
+        stx aliensIndex
 
         LIBMPLEX_SETPOSITION_AAAA aliensSprite, aliensXHigh, aliensXLow, aliensY
         jsr gameAliensSetVariables
-
-gARNone
-        lda aliensFrame
-        sta aliensFrameArray,X
-
-gARNext
+        lda aliensType
+        sta aliensTypeArray,X
         ; loop for each alien
         inx
         cpx #AliensMax
-        bne gARLoop
-
-        ; activate wave
-        lda #True
-        sta wavesActive
-
+        beq gAWActivateWave
+        jmp gAWRLoop
+;-------------------------------------------------------------------------------
+gAWActivateWave
+        mva #True, wavesActive
         ; reset wave timer
-        jsr gameAliensResetTime
-
-        ; get next wave
-        jsr gameAliensNextWave
-
-gARDone
-        rts
-
-;===============================================================================
-
-gameAliensResetTime
-        lda #$60
-        sta time1
-
-        ldy wavesTimeIndex
+        mva cycles, time1
+        ldy wavesIndex
         lda wavesTimeArray,Y
         sta time2
+        lda wavesBomberArray,Y
+        sta bomberTime
+        beq gAWRCheck
+        jsr gameBomberReset
 
-gARTDone
-        rts
+gAWRCheck
+        ; check if end of stage
+        lda playerFlyUp
+        beq gAWRNext
+        mva time2, saveWaveTime
+        mva #FlyUpWaitTime, time2
+        mva bomberTime, saveBomberTime
+        mva #0, bomberTime
+
+gAWRNext
+        ; get next wave
+        inc aliensCountWaves
+        jmp gameAliensNextWave
 
 ;==============================================================================
 
 gameAliensUpdate
-        lda playerActive
-        beq gAUReturn
-
         ldx #0
         stx aliensSprite
 
 gAULoop
         inc aliensSprite
-
+        ldy aliensSprite
         jsr gameAliensGetVariables
-
         lda aliensActive
         beq gAUSkipThisAlien
-
         jsr gameAliensUpdatePosition
         jsr gameAliensUpdateFiring
-
         ; Don't check collisions every frame
         lda aliensStep
         bne gAUUpdated
-
         jsr gameAliensUpdateCollisions
-
         jmp gAUUpdated
 
 gAUSkipThisAlien
-        jsr gameAliensMoveInactive
         jsr gameAliensUpdateInactive
-
         lda aliensCount
         cmp #AliensMax
         beq gAUWaveReset
 
 gAUUpdated
         jsr gameAliensSetVariables
-
         ; loop for each alien
         inx
         cpx #AliensMax
         bne gAULoop
 
-        ; increment aliens step
-        lda aliensStep
-        beq gAUIncMove
-        dec aliensStep
-        jmp gAUFinish
-
-gAUIncMove
-        inc aliensStep
-
 gAUFinish
-        lda #0
-        sta aliensCollision
+        mva #0, aliensCollision
+        lda asteroidsXMove
+        beq gAUReturn
+        lda asteroidsDelay
+        cmp #3
+        bcc gAUNext
+        mva #0, asteroidsDelay
+        jmp gAUReturn
 
+gAUNext
+        inc asteroidsDelay
+
+gAUReturn
         jsr gameFlowDecreaseTime
         beq gAUEndWave
-
-        jmp gAUReturn
+        rts
 
 gAUWaveReset
         ; reset the formation when wave ends and all aliens are deactivated
-        jsr gameAliensWaveReset
-
-        jmp gAUReturn
+        jmp gameAliensWaveReset
 
 gAUEndWave
         lda wavesActive
         beq gAUClearCount
         lda aliensCount
-        cmp aliensCountRed
+        cmp aliensNonShooters
         bcc gAUClearCount
         dec wavesActive
-gAUClearCount
-        lda #0
-        sta aliensCount
 
-gAUReturn
+gAUClearCount
+        mva #0, aliensCount
         rts
 
 ;==============================================================================
@@ -281,35 +403,25 @@ gAUReturn
 gameAliensGetVariables
         lda aliensActiveArray,X
         sta aliensActive
-        lda aliensFrameArray,X
-        sta aliensFrame
-        lda aliensXHighArray,X
+        lda aliensTypeArray,X
+        sta aliensType
+        lda sprxh,y
         sta aliensXHigh
-        lda aliensXLowArray,X
+        lda sprxl,y
         sta aliensXLow
         lda aliensYArray,X
         sta aliensY
-        lda aliensFireArray,X
-        sta aliensFire
-        lda aliensFireIndexArray,X
-        sta aliensFireIndex
         lda aliensRespawnArray,X
         sta aliensRespawn
-
-        stx aliensIndex; save X register as it gets trashed
+        stx aliensIndex                 ; save X register as it gets trashed
         rts
 
 ;==============================================================================
 
 gameAliensSetVariables
-        ldx aliensIndex ; restore X register as it gets trashed
-
+        ldx aliensIndex                 ; restore X register as it gets trashed
         lda aliensActive
         sta aliensActiveArray,X
-        lda aliensFire
-        sta aliensFireArray,X
-        lda aliensFireIndex
-        sta aliensFireIndexArray,X
         lda aliensRespawn
         sta aliensRespawnArray,X
         lda aliensY
@@ -320,25 +432,38 @@ gameAliensSetVariables
 
 gameAliensUpdatePosition
         lda aliensY
-
         ldy aliensStep
-        beq gAUPICharPos
+        bne gAUPIStart
+        jmp gAUPIGetCharPos
 
-        ldy aliensFrame
-        cpy #AlienRed
-        bne gAUPIShooters
-        
+gAUPIStart
+        ldy aliensType
+        cpy #AlienShooter
+        beq gAUPIShooters
+        cpy #AlienOrb
+        beq gAUPIOrbs
         jmp gAUPIIncMove
 
 gAUPIShooters
         ldy wavesActive
         beq gAUPIIncMove
-        cmp aliensYFireArray,X ; X still contains alien index
-        bcs gAUPIFirePos
-       
+        cmp aliensYFireArray,X          ; X must contain alien index
+        bcc gAUPIIncMove
+        jmp gAUPIFirePos
+
+gAUPIOrbs
+        clc
+        adc aliensStep
+        sta aliensY
+        cmp #MAXSPRY
+        bcs gAUPIMoveUp
+
+        jsr gameAliensUpdatePriority
+        jmp gAUPIMoveOrb
+
 gAUPIIncMove
         clc
-        adc aliensSpeed
+        adc aliensStep
         sta aliensY
         cmp #MAXSPRY
         bcs gAUPIMoveUp
@@ -347,20 +472,63 @@ gAUPIIncMove
         jmp gAUPISetPosition
 
 gAUPIMoveUp
+        mva #AliensYStart, aliensY
         lda time2
-        bne gAUPIContinue
+        beq gAUPIFinishWave
 
-        ; deactivate all aliens when wave ends
-        lda #False
-        sta aliensActive
+gAUPIResetSprite
+        lda aliensType
+        cmp #Asteroid
+        beq gAUPIResetAsteroid
+        cmp #AlienMine
+        beq gAUPIResetMine
+        cmp #AlienProbe
+        bcc gAUPIRestoreX
+        jmp gAUPISetVerticalPos
 
-gAUPIContinue
-        lda #AliensYStart
-        sta aliensY
+gAUPIResetMine
+        sta aliensStepArray,X
+        LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AlienHard, AlienHard+4, AnimaSpeed, True
+        LIBMPLEX_SETCOLOR_AV aliensSprite, AlienHardColor
+        jmp gAUPISetVerticalPos
+
+gAUPIResetAsteroid
+        ; set asteroid frame back to original
+        LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AsteroidFrame, AsteroidFrame+3, AnimaSpeed, True
+
+        lda #0
+        sta aliensStepArray,X
+
+gAUPIRestoreX
+        lda aliensXArray,X              ; X must contain alien index
+        sta aliensX
+        LIBMATH_ADD16BIT_VAVAAA 0, aliensX, 0, aliensX, aliensXHigh, aliensXLow
+        jmp gAUPISetHorizontalPos
+
+gAUPIFinishWave
+        mva #False, aliensActive        ; deactivate all aliens when wave ends
 
 gAUPISetPosition
+        lda asteroidsXMove
+        beq gAUPISetVerticalPos
+        lda asteroidsDelay
+        bne gAUPISetVerticalPos
+        ldx aliensIndex
+        lda asteroidsSpeedX,X
+        beq gAUPISetVerticalPos
+        sta ZeroPageTemp
+
+gAUPIMoveX
+        LIBMATH_ADD16BIT8BITSIGN_AAAAA aliensXHigh, aliensXLow, ZeroPageTemp, aliensXHigh, aliensXLow
+
+gAUPISetHorizontalPos
+        LIBMPLEX_SETPOSITION_AAAA aliensSprite, aliensXHigh, aliensXLow, aliensY
+        jmp gAUPISetCharPos
+
+gAUPISetVerticalPos
         LIBMPLEX_SETVERTICALTPOS_AA aliensSprite, aliensY
-        ; calculate the alien char positions
+        
+gAUPISetCharPos
         LIBSCREEN_PIXELTOCHAR_AAVAVAAA aliensXHigh, aliensXLow, 12, aliensY, 40, aliensXChar, aliensXOffset, aliensYChar
         ldx aliensIndex
         sta aliensYCharArray,X ; A is loaded with aliensYChar from the macro
@@ -369,10 +537,47 @@ gAUPISetPosition
         lda aliensXOffset
         sta aliensXOffsetArray,X
         rts
+
 gAUPIFirePos
+        ; load shooter variables
         lda aliensYFireArray,X
         sta aliensY
-gAUPICharPos
+        lda aliensFireArray,X
+        sta aliensFire
+        lda aliensFireIndexArray,X
+        sta aliensFireIndex
+        ; get X movement offset
+        ldy aliensXMoveIndexArray,X
+        iny
+        cpy #AliensXMoveMax
+        bcc gAUPIDontReset
+        ; reset index
+        ldy #0
+        
+gAUPIDontReset
+        tya
+        sta aliensXMoveIndexArray,X
+        lda aliensXMoveArray,Y
+        sta ZeroPageTemp
+        jmp gAUPIMoveX
+
+gAUPIMoveOrb
+        ; get X movement offset
+        ldy aliensXMoveIndexArray,X
+        iny
+        cpy #OrbsXMoveMax
+        bcc gAUPIDontResetOrb
+        ; reset index
+        ldy #0
+
+gAUPIDontResetOrb
+        tya
+        sta aliensXMoveIndexArray,X
+        lda orbsXMoveArray,Y
+        sta ZeroPageTemp
+        jmp gAUPIMoveX
+
+gAUPIGetCharPos
         ; load pre-calculated char based position
         ldx aliensIndex
         lda aliensXCharArray,X
@@ -394,13 +599,11 @@ gameAliensUpdatePriority
         bcc gAUPRMoveOver
 
 gAUPRMoveUnder
-        lda #True
-        sta aliensPriority
+        mva #True, aliensPriority
         jmp gAUPRDone 
 
 gAUPRMoveOver
-        lda #False
-        sta aliensPriority
+        mva #False, aliensPriority
 
 gAUPRDone
         LIBMPLEX_SETPRIORITY_AA aliensSprite, aliensPriority
@@ -409,9 +612,9 @@ gAUPRDone
 ;==============================================================================
 
 gameAliensUpdateFiring
-        lda aliensFrame         ; red aliens don't fire
-        cmp #AlienRed
-        beq gAUFDontfire
+        lda aliensType          ; skip red aliens and asteroids
+        cmp #AlienShooter
+        bne gAUFDontfire
 
         ldx aliensIndex
         lda aliensY             ; don't fire if alien is not on right position
@@ -427,22 +630,25 @@ gameAliensUpdateFiring
         ldy aliensFireIndex
         lda aliensFirePattern,y
         cmp aliensFire
-        bne gAUFDontfire
+        bne gAUFSaveShooterVars
 
-gAUFFire
-        GAMEBULLETS_FIRE_DOWN_AAA aliensXChar, aliensXOffset, aliensYChar
-
-        lda #0
-        sta aliensFire
-
+        mva #0, aliensFire
         ldy aliensFireIndex
         iny
         cpy #AliensFirePatternMax
-        bcc gAUFGetNextDelay
+        bcc gAUFFire
         ldy #0
 
-gAUFGetNextDelay
+gAUFFire
         sty aliensFireIndex
+        GAMEBULLETS_FIRE_DOWN_AAA aliensXChar, aliensXOffset, aliensYChar
+        ldx aliensIndex
+
+gAUFSaveShooterVars
+        lda aliensFire
+        sta aliensFireArray,X
+        lda aliensFireIndex
+        sta aliensFireIndexArray,X
 
 gAUFDontfire
         rts
@@ -452,33 +658,74 @@ gAUFDontfire
 gameAliensUpdateCollisions
         lda aliensCollision
         cmp aliensSprite
-        beq gAUCShield
+        bne gAUCCheckBullet
+        jmp gAUCShield
 
+gAUCCheckBullet
         GAMEBULLETS_COLLIDED_UP_AA aliensXChar, aliensYChar
-        beq gAUCDone
+        beq gAUCCheckBomb
         dec bulletsActiveUp
-        lda #10 ;killed by bullet
+        lda aliensType
+        cmp #AlienMine
+        bcs gAUCCheckStep
+        lda #$10                 ;killed by bullet
         jmp gAUCKill
 
+gAUCCheckBomb
+        GAMEBOMB_COLLIDED_Up_AA aliensXChar, aliensYChar
+        beq gAUCNoCollision
+        lda #$15                 ;killed by bomb
+        jmp gAUCKill
+
+gAUCNoCollision
+        rts
+
+gAUCCheckStep
+        ldx aliensIndex
+        ldy aliensStepArray,X
+        cpy #2
+        bcc gAUCNextStep
+        lda #0
+        sta aliensFire
+        lda #$10                 ;killed by bullet
+        jmp gAUCKill
+
+gAUCNextStep
+        iny
+        cmp #Asteroid           ; A register still has alien type
+        beq gAUCNextFrame
+        tya
+        sta aliensStepArray,X
+        LIBMPLEX_SETCOLOR_AV aliensSprite, AlienDamagedColor
+        LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AlienDamaged, AlienDamaged+4, AnimaSpeed, True
+        rts
+
+gAUCNextFrame
+        tya
+        sta aliensStepArray,X
+        lda asteroidsStartArray,Y
+        sta ZeroPageTemp1
+        lda asteroidsEndArray,Y
+        sta ZeroPageTemp2
+        LIBMPLEX_PLAYANIM_AAAVV aliensSprite, ZeroPageTemp1, ZeroPageTemp2, AnimaSpeed, True
+        rts
+
 gAUCShield
-        lda #5 ;killed by shield
+        lda #$05                 ;killed by shield
 
 gAUCKill
         sta aliensScore
-        jsr gameAliensKill
-
-gAUCDone
-        rts
+        ; gameAliensKill must be the next routine (don't move)
 
 ;==============================================================================
 
 gameAliensKill
         ; run explosion animation
-        LIBSPRITE_PLAYANIM_AVVVV aliensSprite, AliensExplode, FinishExplode, 1, False
+        LIBMPLEX_PLAYANIM_AVVVV aliensSprite, StartExplode, FinishExplode, 2, False
         LIBMPLEX_SETCOLOR_AV     aliensSprite, Yellow
 
         ; play explosion sound
-        LIBSOUND_PLAY_VAA SoundVoice, soundExplosionHigh, soundExplosionLow
+        LIBSOUND_PLAY_VAA ExplosionVoice, soundExplosionHigh, soundExplosionLow
 
         ; don't increase score when the player dies together
         lda playerWillDie
@@ -487,110 +734,124 @@ gameAliensKill
         jsr gameFlowIncreaseScore
 
 gAKDone
-        lda #False
-        sta aliensActive
+        mva #False, aliensActive
         rts
 
 ;==============================================================================
 
 gameAliensUpdateInactive
-        lda time2
-        beq gAUICheckWave
-        jmp gAUIVerify
+        lda aliensY
+        cmp #AliensYStart
+        beq gAUICheckTime
 
-gAUICheckWave
+        clc
+        adc aliensStep
+        sta aliensY
+        cmp #MAXSPRY
+        bcs gAMIMoveUp
+        lda time2
+        bne gAUIVerify
+        rts
+
+gAMIMoveUp
+        mva #AliensYStart, aliensY
+        mva #AliensRespawnDelay-1, aliensRespawn
+
+gAUICheckTime
+        lda time2
+        bne gAUIVerify
         inc aliensCount
-        jmp gAUIDontRespawn
+        rts
 
 gAUIVerify
         inc aliensRespawn
         ldy aliensRespawn
         cpy #AliensRespawnDelay
         beq gAUIRespawn
-        jmp gAUIDontRespawn
-
-gAUIRespawn
-        ldy aliensFrame
-        beq gAUIDontRespawn
-        lda aliensY
-        cmp #AliensYStart
-        bne gAUIDontRespawn
-        cpy #AlienRed
-        beq gAUIRed
-        lda #Green
-        jmp gAUISetSprite
-
-gAUIRed
-        lda #LightRed
-
-gAUISetSprite
-        sta aliensColor
-
-        lda #0
-        sta aliensRespawn
-
-        LIBSPRITE_STOPANIM_A aliensSprite
-        LIBMPLEX_SETFRAME_AA aliensSprite, aliensFrame
-        LIBMPLEX_SETCOLOR_AA aliensSprite, aliensColor
-        inc aliensActive
-        jmp gAUPISetPosition
 
 gAUIDontRespawn
         rts
 
-;==============================================================================
-
-gameAliensMoveInactive
+gAUIRespawn
+        ldy aliensType
         lda aliensY
         cmp #AliensYStart
-        beq gAMIReturn
+        bne gAUIDontRespawn
+        cpy #AlienShooter
+        beq gAUIShooter
+        cpy #AlienProbe
+        beq gAUIProbe
+        cpy #AlienOrb
+        beq gAUIOrb
+        cpy #Asteroid
+        beq gAUIAsteroid
+        mva #AlienHard, alienFrameStart
+        mva #AlienHard+4, alienFrameEnd
+        lda #AlienHardColor
+        jmp gAUISetSprite
 
-        ldx aliensStep
-        beq gAMIReturn
-        clc
-        adc aliensSpeed
-        sta aliensY
-        cmp #MAXSPRY
-        bcs gAMIMoveUp
-        jmp gAMIReturn
+gAUIShooter
+        ; X must be unchanged on this routine
+        lda aliensXMoveIndexDef,X
+        sta aliensXMoveIndexArray,X
+        mva alienShooterStart, alienFrameStart
+        mva alienShooterEnd, alienFrameEnd
+        lda alienShooterColor
+        jmp gAUISetSprite
 
-gAMIMoveUp
-        lda #AliensYStart
-        sta aliensY
-        lda #AliensRespawnDelay-1
-        sta aliensRespawn
+gAUIOrb
+        ; X must be unchanged on this routine
+        lda aliensXMoveIndexDef,X
+        sta aliensXMoveIndexArray,X
+        mva #AlienPogo, alienFrameStart
+        mva #AlienPogo+3, alienFrameEnd
+        lda alienOrbColor
+        jmp gAUISetSprite
 
-gAMIReturn
-        rts
+gAUIAsteroid
+        mva #AsteroidFrame, alienFrameStart
+        mva #AsteroidFrame+3, alienFrameEnd
+        lda #AsteroidColor
+        jmp gAUISetSprite
+
+gAUIProbe
+        mva alienProbeStart, alienFrameStart
+        mva alienProbeEnd, alienFrameEnd
+        lda alienProbeColor
+
+gAUISetSprite
+        LIBMPLEX_SETCOLOR_A aliensSprite
+        LIBMPLEX_PLAYANIM_AAAVV aliensSprite, alienFrameStart, alienFrameEnd, AnimaSpeed, True
+        mva #0, aliensRespawn
+        inc aliensActive
+        ldx aliensIndex
+        jmp gAUPIResetSprite
 
 ;==============================================================================
 
 gameAliensNextWave
-;based on http://codebase64.org/doku.php?id=base:fast_8bit_ranged_random_numbers
-        lda rndSeed
-        beq doEor
-        asl
-        beq noEor ;if the input was $80, skip the EOR
-        bcc noEor
-doEor   eor #$4d
-noEor   sta rndSeed
-        tax
+if SEQUENTIALWAVES = 1
+        inc wavesIndex
+        lda wavesIndex
+        cmp #MaxWaves
+        bcc gANWConfigWave
+        mva #0, wavesIndex
+else
+        inc rndSeed
+        ldx rndSeed
         lda wavesRndTable,X
-        sta wavesTimeIndex
-        tax
-        lda wavesIndexArray,X
         sta wavesIndex
-        rts
+endif
+gANWConfigWave
+        tax
+        lda wavesAliensArrayLow,X
+        sta wavesAliensLow
+        lda wavesAliensArrayHigh,X
+        sta wavesAliensHigh
 
-gameAliensNextWaveDebug
-        inc wavesTimeIndex
-        lda wavesTimeIndex
-        cmp #WavesMax
-        bcc getNext
-        lda #0
-        sta wavesTimeIndex
-getNext
-        tax
-        lda wavesIndexArray,X
-        sta wavesIndex
+        LIBMATH_ADD8BIT_AAX wavesLevelIndex, wavesIndex
+        lda wavesTableLow,X
+        sta wavesFormationLow
+        lda wavesTableHigh,X
+        sta wavesFormationHigh
         rts

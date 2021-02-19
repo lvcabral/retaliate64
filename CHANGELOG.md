@@ -1,6 +1,81 @@
-## Retaliate 64 Changelog
+## Retaliate 64 - Changelog
+
+##### v0.99 - Feb-2020 - New Loader DX screen
+
+- Update version text on credits screen
+- Changed alient types of "Left Stair" wave
+- On disk loader menu: Added DX features screen
+- On Disk Loader menu: Moved load error message one line up to avoid erasing the tip of joystick icon
+
+##### v0.96-v0.98 - Jan-2019 to Jun-2019 - DX Improvements Merge
+
+- Added move left and right animation frames to all player ship models
+- Added animation frames to probe, shooter and asteroid sprites
+- Added new Orb Probes that swings horizontally as it moves down the screen
+- Added Mine Probes than needs 2 hits to be destroyed (or a missile)
+- Alien Mines only starts to appear from the 5th wave of first stage
+- Added new Sonar bomber that passes 3 times and launches a sonic bomb that can only be bounced by player shield
+- New randomized bomb type is: 60% Missiles, 25% Sonic, 15% Full Ammo pulsar
+- Bombs launched by Destroyer and Sonar now follows the player ship, as in original game
+- Bombs launched by player can be guided by the ship position
+- Every stage the probes changes color
+- Each player ship model now has different features:
+    - Lateral Speed: First two ships are normal, the other three are fast
+    - Stable Shield: Sturdy Striker and Ruthless Retaliator are stable, shield don't increase speed during the game
+    - # of Waves in Full Ammo: First three ships it lasts only 2 waves, the other two models the shield lasts 3 waves
+- Reduced player ship hitbox for sprites and bullets when shield is down
+- Shield recovery speed is now faster than consumption (similar to original game)
+- Player ship fly from below the screen on start of stage
+- Multiple explosions when player dies
+- Implemented warp star speed on end of each stage
+- Randomized the start wave to a subset of waves, instead of the constant wave zero.
+- Changed the final stage to only one wave and no asteroid field
+- Adjusted difficulty of the asteroid field formations
+- After Game Over by winning a medal the game switches to the medal panel screen
+- Added support to record several hi-scores, one per skill level
+- Updated medals screen to also show the new high-scores board
+- Added new screen with all alien sprites and ammo types information
+- Changed one of the multicolor generic colors from LightBlue to Blue
+- Removed "blue" and "brown" from the Hangar color picker and added two tones of gray
+- Changed game over message to show "Good Job" only after 60 targets destroyed (minimum of 300 points)
+- Moved the splash bitmap screen from the main prg to the loader menu
+- Added switches for trainers and debug
+- Refactored to add support to up 85 waves (but total defined waves remains 18)
+- Refactored to use the new macro "mva" to directly assign values to variables
+- Several optimizations and bug fixes
+
+##### v0.90-v0.95 - Aug-2018 to Dec-2018 - Community Edition Fork
+
+- Implemented new menu/hangar screens with joystick support (instead of keyboard)
+- Changed speed of player ship, and added small intertia
+- Added horizontal movement for Alien Shooters (similar to Android version)
+- Besides the regular ships (probes and shooters) in some waves a Destroyer will cross the screen and launch a missile towards the player
+- Missles can be collected the same way as bullets, however are launched using the Joystick up
+- There are two types of missiles:
+	- Regular missiles: Can destroy aliens but also asteroids with a single shot. The hit score is 15 for missiles.
+	- "Full ammo" missiles: These will be launched around 20% of the times by the destroyer. It gives unlimited bullets for two waves.
+- Implemented asteroid field with animation (both X & Y movement)
+- 3 bullet shots are needed to destroy an asteroid but only 1 missile
+- Added new menu screen with information about missiles, asteroids and the medal panel
+- Updated credits screen to show additional code developers
+- Implemented Stages
+	- 7 stages per skill level
+	- 10 alien waves randomly selected from 18 available
+	- An asteroid field closes each stage. There are 2 options randomly selected.
+	- Speed increases every 3 stages
+- Added medal award on Game Over screen when player finishes 7 stages on every skill level
+- The same way as the original game, 1000 points on each skill level are needed to unlock the other player ship models
+- Added support for Localization
+- Changed the normal and hard levels shield speed to better balance the game difficulty
+- Removed usage of kernal keyboard routines, that caused slow down on the game with any key press
+- Changed in-game sound switches to a single "mute" option
+- Added "Paused Game" message on screen
+- Aliens speed adjusted when PAL computer is detected
+- Adjusted collision area for player ship, and now the Shield collision is a little wider
+- Reorganized memory to support new sprites and screens
 
 ##### v0.4-v0.8 - Mar-2018 to Jul-2018 - Internal research and development
+
 - Integrated sprite multiplexer (by [Cadaver](https://cadaver.github.io/)), to increase the number of sprites on screen
 - Adapted new [star field routine (by Jay Aldred)](https://github.com/JasonAldred/C64-Starfield) to reduce CPU usage
 - Integrated exclusive SID music (by [Richard Bayliss](http://tnd64.unikat.sk/)) based on the original game theme
@@ -8,6 +83,7 @@
 - Several performance improvements
 
 ##### v0.3 - 03-Feb-2018 - Final Beta - SID Music
+
 - Updated Splash bitmap to show 3 of the ship models
 - Added SID music support (using [Dion Olsthoorn library](http://www.dionoidgames.com))
 - Added SID music during game play ([Scout by Jeroen Tel](http://csdb.dk/sid/?id=28205))

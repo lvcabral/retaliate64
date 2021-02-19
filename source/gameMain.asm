@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameMain.asm - Main Game Loop
 ;
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -21,23 +21,30 @@
 ; Initialize
 
         ; Disable BASIC ROM
-        lda #$36
-        sta $01
+        mva #$36, $01
 
         ; Disable shift + C= keys
-        lda $80
-        sta MODE
+        mva $80, MODE
 
         ; Disable run/stop + restore keys
-        lda #$FC 
-        sta ISTOP
+        mva #$FC, ISTOP
 
         ; Save VIC II mode (NTSC/PAL)
-        lda $02A6
-        sta vicMode
+        mva $02A6, vicMode
+        beq gARNTSC
+        lda #CyclesPAL
+        jmp gARSetCycles
 
+gARNTSC
+        lda #CyclesNTSC
+
+gARSetCycles
+        sta cycles
         ; Load game data from disk
         jsr gameDataLoad
+
+        ; Fill 1000 bytes (40x25) of screen memory
+        jsr gameMenuClearScreen
 
         ; Move VIC II to see 2nd memory bank ($4000-$7FFF)
         lda CI2PRA
@@ -45,27 +52,15 @@
         ora #%00000010
         sta CI2PRA
 
-        ; Show Splash Bitmap
-        jsr startSplash
-
-gARSeed ; Generate Random Seed
-        jsr RDTIM
-        cmp #0
-        beq gARSeed
-        sta rndSeed
+        ; Screen Memory @ $1800 and Charset @ $1000
+        mva #%01100100, VMCSB
 
         ; Set border and background colors
-        LIBSCREEN_SETCOLORS Black, Black, Black, Black, Black
-
-        ; Fill 1000 bytes (40x25) of screen memory 
-        LIBSCREEN_SET1000 SCREENRAM, SpaceCharacter
+        LIBSCREEN_SETCOLORS Black, Black, Yellow, DarkGray, Black
 
         ; Set sprite multicolors
-        LIBSPRITE_SETMULTICOLORS_VV LightBlue, White
+        LIBSPRITE_SETMULTICOLORS_VV Blue, White
         
-        ; Set the memory location of the custom character set
-        LIBSCREEN_SETCHARMEMORY CHARSETPOS
-
         ; Initialize SID registers
         jsr libSoundInit
 
@@ -85,38 +80,48 @@ gMLoop
         lda flowPaused
         bne gMFlow
 
-        ; Start code timer change border color
-        ;inc EXTCOL
+        lda playerActive
+        bne gMActive
+        jsr libInputUpdate
+        jsr libMultiplexUpdateAnims
+        jmp gMStars
 
+gMActive
+        ; Update Music
+        jsr libMusicMixedUpdate
         ; Update libraries
         jsr libInputUpdate
-        jsr libSpritesUpdate
+        jsr libMultiplexUpdateAnims
 
         ; Update the game
-        lda playerActive
-        beq gMSound
+        lda playerFlyUp
+        beq gMAliens
 
-        lda sidDisabled
-        bne gMGame
+gMPlayerFlyUp
         ;inc EXTCOL
-        jsr libMusicUpdate
-gMGame
+        jsr gamePlayerUpdate
+        jsr gameStarsWarp
+        jmp gMSound
+
+gMAliens
         ;inc EXTCOL
         jsr gameAliensUpdate
+        jsr gameBomberUpdate
+        jsr gameBombsUpdate
         ;inc EXTCOL
         jsr gamePlayerUpdate
         ;inc EXTCOL
         jsr gameBulletsUpdate
 
-gMSound
-        lda soundDisabled
-        bne gMStars
-        ;inc EXTCOL
-        jsr libSoundUpdate
-
 gMStars
         ;inc EXTCOL
         jsr gameStarsUpdate
+
+gMSound
+        lda soundDisabled
+        bne gMFlow
+        ;inc EXTCOL
+        jsr libSoundUpdate
 
 gMFlow
         ;inc EXTCOL
@@ -126,7 +131,7 @@ gMFlow
         ;sta EXTCOL
 
         ;Sort sprites, build sprite IRQ lists and set the update flag
-        jsr sortsprites
+        jsr libMultiplexSortSprites
         ;Check if shield is under the player ship to swap
         lda shieldOrder
         cmp #$07
@@ -135,6 +140,7 @@ gMFlow
         cmp #$08
         bne gMNext
         jmp gMSwap
+
 gMNext
         lda shieldOrder
         cmp #$17
@@ -142,7 +148,9 @@ gMNext
         lda playerOrder
         cmp #$18
         bne gMEndLoop
+
 gMSwap
-        jsr libSpritesSwap
+        jsr gamePlayerSpriteSwap
+
 gMEndLoop
         jmp gMLoop

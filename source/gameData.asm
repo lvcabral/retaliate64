@@ -8,26 +8,37 @@
 ;
 ;===============================================================================
 ;
-; Adapted from the code posted at Codebase 64 website:
+; Disk routines adapted from the code posted at Codebase 64 website:
 ; http://codebase64.org/doku.php?id=base:dos_examples
-
+;
 ;===============================================================================
 ; Constants
 
+DATAVERSION     = 1
+
 GAMEDATA        = $0340
-; 3 bytes for highscore
-; 2 bytes for ship frame + color
-; 1 byte for shield color
-; 1 byte for disable sound effects
-; 1 byte for disable music
-; 1 byte for dificulty level
-; 1 byte for future use
-ENDOFFILE       = $034A
+; 1 byte for version of data file
+; 3 bytes for highscore easy
+; 3 bytes for highscore normal
+; 3 bytes for highscore hard
+; 3 bytes for highscore extreme
+; 1 byte for ship frame index
+; 1 byte for ship color index
+; 1 byte for shield color index
+; 1 byte for disable sound effects (boolean)
+; 1 byte for disable music (boolean)
+; 1 byte for dificulty level index
+; 1 byte for ships and medals lock bit flags
+ENDOFFILE       = $0354
+DATASIZE        = ENDOFFILE - GAMEDATA
+HISCORES        = GAMEDATA+1
 
 ;===============================================================================
 ; Variables
 
-diskErrorFlag   byte 0
+hiScoresOffset  byte 0, 3, 6, 9
+dataErrorFlag   byte 0
+
 diskErrorCode   byte 0
 
 scratch         byte $53,$30,$3A ;"s0:"
@@ -38,56 +49,113 @@ fname_end
 ; Subroutines
 
 gameDataLoad
+        jsr gameDataLoadDisk
+        lda dataErrorFlag
+        beq gDLCopy
+        rts                     ; return with any disk error
+
+gDLCopy
+        ; Check data file version
+        lda GAMEDATA
+        cmp #DATAVERSION
+        beq gDLLoad
+        rts                     ; return with invalid or inexistent data file
+
+gDLLoad
+        ; Copy data to global variables
+        lda GAMEDATA+13
+        cmp #PlayerMaxModels
+        bcs gDLPlayer           ; Ignore if is invalid index
+        sta playerFrameIndex
+        sta modelFrameIndex
+
+gDLPlayer
+        lda GAMEDATA+14
+        cmp #MaxColors
+        bcs gDLShield           ; Ignore if is invalid index
+        sta shipColorIndex
+
+gDLShield
+        lda GAMEDATA+15
+        cmp #MaxColors
+        bcs gDLShield           ; Ignore if is invalid index
+        sta shldColorIndex
+
+gDLSfx
+        mva GAMEDATA+16, soundDisabled
+
+gDLMusic
+        mva GAMEDATA+17, sidDisabled
+
+gDLLevel
+        ldx GAMEDATA+18
+        cpx #4
+        bcs gDLLocked           ; Ignore if is invalid level
+        stx levelNum
+        jsr gameDataGetHiScore
+
+gDLLocked
+if UNLOCKALL = 1
+        ; Debug: Enable all ships and medals
+        lda #$FF
+else
+        lda GAMEDATA+19
+endif
+        sta unlockFlags
+        rts
+
+;===============================================================================
+
+gameDataGetHiScore
+        ; X must have current level
+        ldy hiScoresOffset,X
+        lda HISCORES,Y
+        sta hiscore3
+        iny
+        lda HISCORES,Y
+        sta hiscore2
+        iny
+        lda HISCORES,Y
+        sta hiscore1
+        rts
+
+;===============================================================================
+
+gameDataSave
+        ; Copy global variables data
+        mva #DATAVERSION, GAMEDATA
+        mva playerFrameIndex, GAMEDATA+13
+        mva shipColorIndex, GAMEDATA+14
+        mva shldColorIndex, GAMEDATA+15
+        mva soundDisabled, GAMEDATA+16
+        mva sidDisabled, GAMEDATA+17
+        mva levelNum, GAMEDATA+18
+        mva unlockFlags, GAMEDATA+19
+        ; Clear error flag
+        mva #0, dataErrorFlag
+        ; Save data
+        jmp gameDataSaveDisk
+;===============================================================================
+gameDataLoadDisk
         ; Read data from disk
-        lda #0
-        sta diskErrorFlag ; Clear error flag
+        mva #0, dataErrorFlag   ; Clear error flag
         jsr setFileName
         lda #$01
-        ldx $BA       ; last used device number
+        ldx $BA                 ; last used device number
         bne gDLSkip
-        ldx #$08      ; default to device 8
+        ldx #$08                ; default to device 8
+
 gDLSkip
-        ldy #$01      ; not $01 means: load to address stored in file
+        ldy #$01                ; not $01 means: load to address stored in file
         jsr SETLFS
 
-        lda #$00      ; $00 means: load to memory (not verify)
+        lda #$00                ; $00 means: load to memory (not verify)
         jsr LOAD
-        bcs gDLError  ; if carry set, a load error has happened
+        bcs gDLError            ; if carry set, a load error has happened
 
         lda #$01
-        jsr CLOSE
-
-        ; Copy data to global variables
-        lda GAMEDATA
-        sta hiscore1
-        lda GAMEDATA + 1
-        sta hiscore2
-        lda GAMEDATA + 2
-        sta hiscore3
-        lda GAMEDATA + 3
-        cmp #PlayerMaxModels
-        bcs gDLPlayer   ; Ignore if is invalid index
-        sta playerFrameIndex
-gDLPlayer
-        lda GAMEDATA + 4
-        beq gDLShield   ; Ignore if color is black
-        sta shipColorIndex
-gDLShield
-        lda GAMEDATA + 5
-        beq gDLSfx      ; Ignore if color is black
-        sta shldColorIndex
-gDLSfx
-        lda GAMEDATA + 6
-        sta soundDisabled
-gDLMusic
-        lda GAMEDATA + 7
-        sta sidDisabled
-gDLLevel
-        lda GAMEDATA + 8
-        cmp #4
-        bcs gDLReturn   ; Ignore if is invalid level
-        sta levelNum
-        jmp gDLReturn
+        jmp CLOSE
+        
 gDLError
         ; Accumulator contains BASIC error code
         ; most likely errors:
@@ -96,21 +164,19 @@ gDLError
         ; A = $1D (LOAD ERROR)
         ; A = $00 (BREAK, RUN/STOP has been pressed during loading)
         sta diskErrorCode
-        inc diskErrorFlag
-gDLReturn
+        inc dataErrorFlag
         rts
 
 ;===============================================================================
-gameDataSave
-        lda #0
-        sta diskErrorFlag ; Clear error flag
 
+gameDataSaveDisk
         ; Erase old file
         lda #$0F
         ldy #$0F
         ldx $BA
         bne gSSSkip
         ldx #$08
+
 gSSSkip
         jsr SETLFS
         lda #fname_end-scratch
@@ -120,46 +186,26 @@ gSSSkip
         jsr OPEN
         bcc gSSNoError
         sta diskErrorCode
-        inc diskErrorFlag
+        inc dataErrorFlag
+
 gSSNoError
         lda #$0F
         jsr CLOSE
         jsr CLRCHN
-
-        ; Copy global variables data
-        lda hiscore1
-        sta GAMEDATA
-        lda hiscore2
-        sta GAMEDATA + 1
-        lda hiscore3
-        sta GAMEDATA + 2
-        lda playerFrameIndex
-        sta GAMEDATA + 3
-        lda shipColorIndex
-        sta GAMEDATA + 4
-        lda shldColorIndex
-        sta GAMEDATA + 5
-        lda soundDisabled
-        sta GAMEDATA + 6
-        lda sidDisabled
-        sta GAMEDATA + 7
-        lda levelNum
-        sta GAMEDATA + 8
         ; Save new file to disk
         lda #$FF
         ldy #$00
         jsr setFileName
-        lda #<GAMEDATA
-        sta ZeroPageTemp1
-        lda #>GAMEDATA
-        sta ZeroPageTemp2
+        mva #<GAMEDATA, ZeroPageTemp1
+        mva #>GAMEDATA, ZeroPageTemp2
         ldx #<ENDOFFILE
         ldy #>ENDOFFILE
         lda #ZeroPageTemp1
         jsr SAVE
         bcc gSSDone
         sta diskErrorCode
-        inc diskErrorFlag
+        inc dataErrorFlag
+
 gSSDone
         rts
 
@@ -169,4 +215,3 @@ setFileName
         ldx #<fname
         ldy #>fname
         jmp SETNAM
-        rts

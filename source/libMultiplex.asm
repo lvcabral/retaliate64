@@ -2,40 +2,57 @@
 ;  libMultiplex.asm - Sprite Multiplex & Sort
 ;
 ;  Original sprite multiplex & sort routine:
-;  Copyright (C) 1998-2018 Lasse Öörni - <https://cadaver.github.io/>
+;  Copyright (C) 1998-2018 Lasse Öörni - <https://cadaver.github.io>
+;  Animation Routines:
+;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
 ;  Macros, improvements and adaptation:
-;  Copyright (C) 2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018,2019 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
 ;
 ;===============================================================================
+; Memory Location
+
+* = $4000
+
+;==============================================================================
 ; Constants
 
-IRQ1LINE        = $FB           ;Screen raster line where IRQ happens
 MAXSPR          = 16            ;Maximum number of sprites
 MINSPRY         = 35            ;Minimum visible sprite Y-coordinate
 MAXSPRY         = 245           ;Maximum visible sprite Y-coordinate + 1
+IRQ1LINE        = 251           ;Screen raster line where IRQ happens
+HideY           = 255
+EmptyFrame      = 94
 
 ;===============================================================================
 ; Page Zero
 
-temp1           = $03
-temp2           = $04
-temp3           = $05
-sprupdateflag   = $06           ;Update flag for IRQ
-sortsprstart    = $07           ;First used sorted table index (doublebuffered)
-sortsprend      = $08           ;Last used sorted table index + 1
+temp1           = $02
+temp2           = $03
+temp3           = $04
+sprupdateflag   = $05           ;Update flag for IRQ
+sortsprstart    = $06           ;First used sorted table index (doublebuffered)
+sortsprend      = $07           ;Last used sorted table index + 1
 
-spry            = $40           ;Y & order tables need to be on zeropage due to addressing modes
-sprorder        = $41+MAXSPR    ;& sorting speed. They also need to contain 25 elements to contain
-                                ;an endmark
+shieldOrder     = $08
+playerOrder     = $09
+
+sprAnimaCurrent = $16
+sprAnimaFrame   = $17
+sprAnimaEndFrame= $18
+
+spry            = $40           ;Y & order tables need to be on zeropage due to
+sprorder        = $41+MAXSPR    ;addressing modes & sorting speed. It also needs
+                                ;to have 17 elements to contain an endmark
+irqenabled      = $8D
 
 ;===============================================================================
 ; Variables
 
-sprxl           dcb MAXSPR,0    ;Unsorted sprite tables to be manipulated by the main program.
-sprxh           dcb MAXSPR,0    ;Y & order need to be on the zeropage
+sprxl           dcb MAXSPR,0    ;Unsorted sprite tables
+sprxh           dcb MAXSPR,0
 sprf            dcb MAXSPR,0
 sprc            dcb MAXSPR,0
 sprm            dcb MAXSPR,1
@@ -46,7 +63,7 @@ sortsprd010     dcb MAXSPR*2,0
 sortspry        dcb MAXSPR*2,0
 sortsprf        dcb MAXSPR*2,0
 sortsprc        dcb MAXSPR*2,0
-sortsprm        dcb MAXSPR*2,0
+sortsprm        dcb MAXSPR*2,1
 sortsprp        dcb MAXSPR*2,0
 sprirqline      dcb MAXSPR*2,0  ;Table used to control sprite IRQs
 
@@ -99,6 +116,16 @@ sprirqjumptblhi byte >irq2_spr0
                 byte >irq2_spr6
                 byte >irq2_spr7
 
+; animation arrays
+spriteAnimsActive          dcb MAXSPR, 0
+spriteAnimsStartFrame      dcb MAXSPR, 0
+spriteAnimsFrame           dcb MAXSPR, 0
+spriteAnimsEndFrame        dcb MAXSPR, 0
+spriteAnimsStopFrame       dcb MAXSPR, 0
+spriteAnimsSpeed           dcb MAXSPR, 0
+spriteAnimsDelay           dcb MAXSPR, 0
+spriteAnimsLoop            dcb MAXSPR, 0
+
 ;===============================================================================
 ; Macros/Subroutines
 
@@ -115,6 +142,13 @@ defm    LIBMPLEX_SETCOLOR_AA           ; /1 = Sprite Number    (Address)
                                        ; /2 = Color            (Address)
         ldy /1
         lda /2
+        sta sprc,y
+        endm
+
+;===============================================================================
+
+defm    LIBMPLEX_SETCOLOR_A            ; /1 = Sprite Number    (Address)
+        ldy /1
         sta sprc,y
         endm
 
@@ -184,6 +218,148 @@ defm    LIBMPLEX_MULTICOLORENABLE_AV   ; /1 = Sprite Number (Address)
 
 ;===============================================================================
 
+defm    LIBMPLEX_MULTICOLORENABLE_AA   ; /1 = Sprite Number (Address)
+                                       ; /2 = Enable/Disable (Address)
+        ldy /1
+        lda /2
+        sta sprm,y
+        endm
+
+;===============================================================================
+
+defm    LIBMPLEX_PLAYANIM_AVVVVV       ; /1 = Sprite Number    (Address)
+                                       ; /2 = StartFrame       (Address)
+                                       ; /3 = EndFrame         (Address)
+                                       ; /4 = Speed            (Value)
+                                       ; /5 = Delay            (Value)
+                                       ; /6 = Loop True/False  (Value)
+
+        ldy /1
+
+        lda #True
+        sta spriteAnimsActive,y
+        lda #/2
+        sta spriteAnimsStartFrame,y
+        sta spriteAnimsFrame,y
+        lda #/3
+        sta spriteAnimsEndFrame,y
+        lda #/4
+        sta spriteAnimsSpeed,y
+        lda #/5
+        sta spriteAnimsDelay,y
+        lda #/6
+        sta spriteAnimsLoop,y
+
+        clc
+        lda #EmptyFrame
+        adc #SPRITERAM
+        sta sprf,y
+
+        endm
+
+;===============================================================================
+
+defm    LIBMPLEX_PLAYANIM_AAAVVV       ; /1 = Sprite Number    (Address)
+                                       ; /2 = StartFrame       (Address)
+                                       ; /3 = EndFrame         (Address)
+                                       ; /4 = Speed            (Value)
+                                       ; /5 = Delay            (Value)
+                                       ; /6 = Loop True/False  (Value)
+
+        ldy /1
+
+        lda #True
+        sta spriteAnimsActive,y
+        lda /2
+        sta spriteAnimsStartFrame,y
+        sta spriteAnimsFrame,y
+        lda /3
+        sta spriteAnimsEndFrame,y
+        lda #/4
+        sta spriteAnimsSpeed,y
+        lda #/5
+        sta spriteAnimsDelay,y
+        lda #/6
+        sta spriteAnimsLoop,y
+
+        clc
+        lda #EmptyFrame
+        adc #SPRITERAM
+        sta sprf,y
+
+        endm
+
+;==============================================================================
+
+defm    LIBMPLEX_PLAYANIM_AVVVV         ; /1 = Sprite Number    (Address)
+                                        ; /2 = StartFrame       (Value)
+                                        ; /3 = EndFrame         (Value)
+                                        ; /4 = Speed            (Value)
+                                        ; /5 = Loop True/False  (Value)
+
+        ldy /1
+
+        lda #True
+        sta spriteAnimsActive,y
+        lda #/2
+        sta spriteAnimsStartFrame,y
+        sta spriteAnimsFrame,y
+        lda #/3
+        sta spriteAnimsEndFrame,y
+        lda #/4
+        sta spriteAnimsSpeed,y
+        sta spriteAnimsDelay,y
+        lda #/5
+        sta spriteAnimsLoop,y
+
+        endm
+
+;==============================================================================
+
+defm    LIBMPLEX_PLAYANIM_AAAVV         ; /1 = Sprite Number    (Address)
+                                        ; /2 = StartFrame       (Address)
+                                        ; /3 = EndFrame         (Address)
+                                        ; /4 = Speed            (Value)
+                                        ; /5 = Loop True/False  (Value)
+
+        ldy /1
+
+        lda #True
+        sta spriteAnimsActive,y
+        lda /2
+        sta spriteAnimsStartFrame,y
+        sta spriteAnimsFrame,y
+        lda /3
+        sta spriteAnimsEndFrame,y
+        lda #/4
+        sta spriteAnimsSpeed,y
+        sta spriteAnimsDelay,y
+        lda #/5
+        sta spriteAnimsLoop,y
+
+        endm
+
+;==============================================================================
+
+defm    LIBMPLEX_ISANIMPLAYING_A      ; /1 = Sprite Number    (Address)
+
+        ldy /1
+        lda spriteAnimsActive,y
+
+        endm
+
+;==============================================================================
+
+defm    LIBMPLEX_STOPANIM_A            ; /1 = Sprite Number    (Address)
+
+        ldy /1
+        lda #0
+        sta spriteAnimsActive,y
+
+        endm
+
+;===============================================================================
+
 defm    LIBMPLEX_SETUPSPRITE_VAA        ; /1 = Sprite Number   (Value)
                                         ; /2 = X High Address  (Address)
                                         ; /3 = X Low Address   (Address)
@@ -229,6 +405,7 @@ libMultiplexInit
         lda #$00               ;Reset update flag & doublebuffer side
         sta sprupdateflag
         sta sortsprstart
+        mva #True, irqenabled
         ldx #MAXSPR            ;Init the order table with a 0,1,2,3,4,5.. order.
 is_orderlist    
         txa                    ;Init all Y-coordinates with $ff (unused)
@@ -255,31 +432,40 @@ initraster
         lda CIAICR             ;Acknowledge IRQ (to be sure)
         lda CI2ICR             ;Acknowledge IRQ (to be sure)
         cli
-
-repeat 0, 7, idx
-                LIBSPRITE_MULTICOLORENABLE_AV idx, True
-endrepeat
-                rts
+        lda #%11111111         ;Multicolor on all sprites by default
+        sta SPMC
+        rts
 
 ;===============================================================================
 ;Routine to reset the sprite multiplexing system (hide all sprites)
 
 libMultiplexReset
-        ldx #MAXSPR
-reset_loop      
-        lda #$FF               ;Init all Y-coordinates with $ff (unused)
+        lda #$00               ;Reset update flag & doublebuffer side
+        sta sprupdateflag
+        sta sortsprstart
+        sta SPENA              ;Hide all sprites now
+        sta XXPAND             ;Reset sprite expand flags
+        sta YXPAND
+
+        ldx #MAXSPR            ;Init the order table with a 0,1,2,3,4,5.. order.
+lmr_orderlist
+        txa                    ;Init all Y-coordinates with $ff (unused)
+        sta sprorder,x
+        lda #$FF
         sta spry,x
         dex
-        bpl reset_loop
-        rts
+        bpl lmr_orderlist
+        mva #True, irqenabled
+        ; don't move this routine
+        ; it needs to run sortsprites to avoid sprites to reappear for a frame
 
 ;===============================================================================
 ; Routine to sort the sprites, copy them to the sorted table, and
 ; arrange the sprite IRQ's beforehand
 
-sortsprites     
+libMultiplexSortSprites
         lda sprupdateflag      ;Wait until IRQ is done with current sprite update
-        bne sortsprites
+        bne libMultiplexSortSprites
         ;inc EXTCOL
         lda sortsprstart       ;Switch sprite doublebuffer side
         eor #MAXSPR
@@ -491,6 +677,12 @@ sspr_foundplayer
 ; start showing the sprites
 
 irq1            
+        lda irqenabled
+        bne irq1_process
+        sta sprupdateflag
+        inc IRQFLAG
+        jmp IRQCONTINUE        ;IRQ disabled for direct sprite usage
+irq1_process
         lda sprupdateflag      ;New sprites?
         beq irq1_nonewsprites
         lda #$00
@@ -607,3 +799,64 @@ irq2_alldone
         sta RASTER
         inc IRQFLAG
         jmp IRQCONTINUE        ;All spriteIRQ's done, return to the top of screen IRQ
+
+;==============================================================================
+
+libMultiplexUpdateAnims
+        ldx #0
+
+lSoULoop
+        ; skip this sprite anim if not active
+        lda spriteAnimsActive,x
+        bne lSoUActive
+        jmp lSoUSkip
+
+lSoUActive
+        stx sprAnimaCurrent
+        lda spriteAnimsFrame,x
+        sta sprAnimaFrame
+
+        lda spriteAnimsEndFrame,x
+        sta sprAnimaEndFrame
+
+        dec spriteAnimsDelay,x
+        bne lSoUSkip
+
+        LIBMPLEX_SETFRAME_AA sprAnimaCurrent, sprAnimaFrame
+
+        ; reset the delay
+        lda spriteAnimsSpeed,x
+        sta spriteAnimsDelay,x
+
+        ; change the frame
+        inc spriteAnimsFrame,x
+
+        ; check if reached the end frame
+        lda sprAnimaEndFrame
+        cmp spriteAnimsFrame,x
+        bcs lSoUSkip
+
+        ; check if looping
+        lda spriteAnimsLoop,x
+        beq lSoUDestroy
+
+        ; reset the frame
+        lda spriteAnimsStartFrame,x
+        sta spriteAnimsFrame,x
+        jmp lSoUSkip
+
+lSoUDestroy
+        ; turn off
+        lda #False
+        sta spriteAnimsActive,x
+        LIBMPLEX_SETVERTICALTPOS_AA sprAnimaCurrent, #HideY
+
+lSoUSkip
+        ; loop for each sprite anim
+        inx
+        cpx #MAXSPR
+        beq lSoUFinished
+        jmp lSoUloop
+
+lSoUFinished
+        rts

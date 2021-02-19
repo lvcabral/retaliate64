@@ -49,6 +49,18 @@ defm    LIBMATH_ADD8BIT_AVA
 
 ;==============================================================================
 
+defm    LIBMATH_ADD8BIT_AAX
+                ; /1 = 1st Number (Address)
+                ; /2 = 2nd Number (Address)
+                ; /3 = Sum (Address)
+        clc     ; Clear carry before add
+        lda /1  ; Get first number
+        adc /2  ; Add to second number
+        tax     ; Store sum in register X
+        endm
+
+;==============================================================================
+
 defm    LIBMATH_ADD16BIT_VAVAAA
                 ; /1 = 1st Number High Byte (Value)
                 ; /2 = 1st Number Low Byte (Address)
@@ -81,6 +93,27 @@ defm    LIBMATH_ADD16BIT_AAVAAA
         lda /1  ; Get MSB of first number
         adc #/3 ; Add carry and MSB of NUM2
         sta /5  ; Store sum in MSB of sum
+        endm
+
+;==============================================================================
+
+defm    LIBMATH_ADD16BIT8BITSIGN_AAAAA
+                ; /1 = 1st Number High Byte (Address)
+                ; /2 = 1st Number Low Byte (Address)
+                ; /3 = 2nd Number Signed Byte (Address)
+                ; /4 = Sum High Byte (Address)
+                ; /5 = Sum Low Byte (Address)
+        ldx #0  ; implied high byte of delta
+        lda /3
+        bpl @skip
+        dex     ; high byte becomes $FF to reflect negative delta
+@skip
+        clc
+        adc /2  ; normal 16-bit addition
+        sta /5
+        txa
+        adc /1
+        sta /4
         endm
 
 ;==============================================================================
@@ -178,7 +211,7 @@ defm    LIBMATH_SUB8BIT_AAA
         sec     ; sec is the same as clear borrow
         lda /1  ; Get first number
         sbc /2  ; Subtract second number
-        sta /3  ; Store in sum
+        sta /3  ; Store in subtraction
         endm
 
 ;==============================================================================
@@ -190,7 +223,7 @@ defm    LIBMATH_SUB8BIT_AVA
         sec     ; sec is the same as clear borrow
         lda /1  ; Get first number
         sbc #/2 ; Subtract second number
-        sta /3  ; Store in sum
+        sta /3  ; Store in subtraction
         endm
 
 ;==============================================================================
