@@ -1,7 +1,7 @@
 ;===============================================================================
-;  libMemory.asm - C64 Memory RAM/ROM Addresses
+;  libDefines.asm - C64 Constants of RAM/ROM Addresses
 ;  
-;  Copyright (C) 2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -17,6 +17,11 @@ ISTOP           = $0328
 ;===============================================================================
 ; C64 registers that are mapped into IO memory space
 
+D6510           = $00
+R6510           = $01
+TIME0           = $A0
+TIME1           = $A1
+TIME2           = $A2
 SP0X            = $D000
 SP0Y            = $D001
 MSIGX           = $D010

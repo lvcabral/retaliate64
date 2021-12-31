@@ -1,22 +1,26 @@
 ;===============================================================================
-;  retdata.asm - Game Default Data File Generator
+;  buildDataFile.asm - Game Default Data File Generator
 ;
-;  Copyright (C) 2018,2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018,2021 Marcelo Lv Cabral - <https:;lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
-;  file LICENSE or https://opensource.org/licenses/MIT
+;  file LICENSE or https:;opensource.org/licenses/MIT
 ;
 ;===============================================================================
 ; Press F6 to build the prg file
 
-GenerateTo retdata.prg
+GenerateTo "..\out\retdata.prg"
 
 * = $0340
         byte 1        ; Data file version
         byte 0,0,0    ; High score easy
+        byte 0        ; Stage easy
         byte 0,0,0    ; High score normal
+        byte 0        ; Stage normal
         byte 0,0,0    ; High score hard
+        byte 0        ; Stage hard
         byte 0,0,0    ; High score extreme
+        byte 0        ; Stage extreme
         byte 0        ; Player frame (array index)
         byte 1        ; Player color (array index)
         byte 5        ; Shield color (array index)

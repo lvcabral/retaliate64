@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  resEnglish.asm - English Text Resources
 ;
-;  Copyright (C) 2018,2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018,2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -10,8 +10,9 @@
 * = $8000
 ; Menu Screens
 MAPRAM
-        ; Export List: 1-7(9),1-7(10),1-7(11),1-7(12),1-7(13),1-7(14),1-7(15),1-7(16),1-7(17),1-7(18),1-7(19),1-7(20),1-7(21),1-7(22)
-        incbin "screens.bin"
+        ; Use the following export list on CBM prg Studio to export the screen binary file to assets folder: 
+        ; 1-7(8),1-7(9),1-7(10),1-7(11),1-7(12),1-7(13),1-7(14),1-7(15),1-7(16),1-7(17),1-7(18),1-7(19),1-7(20),1-7(21),1-7(22)
+        incbin "..\assets\screens.bin"
 
 ;===============================================================================
 ;Constants
@@ -33,6 +34,8 @@ MenuStartLen = 10
 MenuHangarX  = 20
 MenuHangarLen= 11
 MenuColorX   = 2
+MenuStageOff = 8
+HiPanelX     = 17
 ModelTitleX  = 24
 ModelTitleY  = 8
 ModelNameX   = 21

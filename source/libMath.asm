@@ -2,7 +2,7 @@
 ;  libMath.asm - Mathematics Macros
 ;
 ;  Copyright (C) 2017,2018 RetroGameDev - <https://www.retrogamedev.com>
-;  Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017,2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -223,6 +223,18 @@ defm    LIBMATH_SUB8BIT_AVA
         sec     ; sec is the same as clear borrow
         lda /1  ; Get first number
         sbc #/2 ; Subtract second number
+        sta /3  ; Store in subtraction
+        endm
+
+;==============================================================================
+
+defm    LIBMATH_SUB8BIT_VAA
+                ; /1 = 1st Number (Value)
+                ; /2 = 2nd Number (Address)
+                ; /3 = Sum (Address)
+        sec     ; sec is the same as clear borrow
+        lda #/1  ; Get first number
+        sbc /2 ; Subtract second number
         sta /3  ; Store in subtraction
         endm
 

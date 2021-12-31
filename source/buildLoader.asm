@@ -1,7 +1,7 @@
 ;===============================================================================
-;  retaliate.asm - Game Loader
+;  buildLoader.asm - Game Loader
 ;
-;  Copyright (C) 2018-2020 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -9,7 +9,7 @@
 ;===============================================================================
 ; Press F6 to build the prg file
 
-GenerateTo retaliate.prg
+GenerateTo "..\out\retaliate.prg"
 
 #region Basic Loader
 *=$0801 ; 10 SYS (2064)
@@ -22,9 +22,9 @@ GenerateTo retaliate.prg
 
         jmp initMenu
 
-        incasm libMemory.asm
-        incasm libInput.asm
-        incasm libSprite.asm
+        incasm "libDefines.asm"
+        incasm "libInput.asm"
+        incasm "libSprite.asm"
 #endregion
 #region Splash Screen
 ;===============================================================================
@@ -68,6 +68,7 @@ loopSplash
         beq endSplash
         WAIT_V 255
         jmp loopSplash                  ; loop if nothing was pressed
+
 endSplash
         mva #$9B, SCROLY                ; Disable Bitmap mode
         mva #$08, SCROLX                ; Disable Multicolor mode
@@ -84,9 +85,6 @@ initMenu
 
         ; Disable run/stop + restore keys
         mva #$FC, ISTOP
-
-        ; Save VIC II mode (NTSC/PAL)
-        mva $02A6, vicMode
 
         ; Save VIC II registers
         mva CI2PRA, vicReg1
@@ -207,7 +205,7 @@ setLogoFrame
 ;===============================================================================
 
 showMenu
-        DRAWTEXT_AAAV #11, #05, community, LightGreen
+        DRAWTEXT_AAAV #11, #04, community, LightGreen
         DRAWTEXT_AAAV #14, #11, menu1, MenuColor
         DRAWTEXT_AAAV #14, #13, menu2, MenuColor
         ldx menuOption
@@ -286,15 +284,16 @@ loadEn
 showDX
         jsr showLogoDX
         SET1000 SCREENRAM, SpaceCharacter
-        DRAWTEXT_AAAV #03, #08, dxLine1, LightBlue
-        DRAWTEXT_AAAV #03, #09, dxLine2, Cyan
-        DRAWTEXT_AAAV #03, #10, dxLine3, Green
-        DRAWTEXT_AAAV #03, #11, dxLine4, LightGreen
-        DRAWTEXT_AAAV #03, #12, dxLine5, Yellow
-        DRAWTEXT_AAAV #03, #13, dxLine6, Red
-        DRAWTEXT_AAAV #03, #14, dxLine7, LightRed
-        DRAWTEXT_AAAV #03, #16, dxLine8, Green
-        DRAWTEXT_AAAV #03, #17, dxLine9, LightGreen
+        DRAWTEXT_AAAV #02, #07, dxLine0, LightBlue
+        DRAWTEXT_AAAV #02, #08, dxLine1, Cyan
+        DRAWTEXT_AAAV #02, #09, dxLine2, Green
+        DRAWTEXT_AAAV #02, #10, dxLine3, LightGreen
+        DRAWTEXT_AAAV #02, #11, dxLine4, Yellow
+        DRAWTEXT_AAAV #02, #12, dxLine5, Orange
+        DRAWTEXT_AAAV #02, #13, dxLine6, Red
+        DRAWTEXT_AAAV #02, #14, dxLine7, LightRed
+        DRAWTEXT_AAAV #02, #15, dxLine8, Purple
+        DRAWTEXT_AAAV #02, #17, dxLine9, LightGreen
         CharsOnScreen 16, 19, joystickChars, joystickColors, 42
 
 loopDX
@@ -318,7 +317,7 @@ SPRITE0         = SCREENRAM + $03F8
 ; Splash screen bitmap
 BITMAPRAM       = $2000
 * = $2000
-        incbin "splash.kla",2
+        incbin "..\assets\splash.kla",2
 
 ; 192 decimal * 64(sprite size) = 12288(hex $3000)
 SPRITERAM       = 64
@@ -365,7 +364,7 @@ setFileEn
         ldy #>fen
         jmp SETNAM
 
-fen     byte "ret-en"
+fen     text "ret-en"
 fen_end
 
 #endregion
@@ -428,7 +427,7 @@ False           = 0
 True            = 1
 
 LogoXPos        = 110
-LogoYPos        = 62
+LogoYPos        = 52
 
 
 JoyStickDelay   = 10
@@ -542,23 +541,25 @@ joystickColors  byte $00,$00,$00,$01,$00,$00,$00
                 byte $00,$00,$01,$01,$00,$00,$00
                 byte $01,$01,$01,$01,$01,$01,$00
 
-dxline1         text '* available as cartridge and disk'
+dxline0         text '* available as digital download'
                 byte $00
-dxline2         text '* in english, portuguese and spanish'
+dxline1         text '* in english, portuguese and spanish'
+                byte $00
+dxline2         text '* support snes gamepad on user port '
                 byte $00
 dxline3         text '* new menu sid music and improved sfx'
                 byte $00
-dxline4         text '* amazing sprites by trevor storey'
+dxline4         text '* amazing graphics by trevor storey'
                 byte $00
-dxline5         text '* 6 different probes & shooter ships'
+dxline5         text '* two ship models with double cannons'
                 byte $00
-dxline6         text '* 18 additional wave formations'
+dxline6         text '* 6 different probes & escort enemies'
                 byte $00
-dxline7         text '* mothership end game scene and tune'
+dxline7         text '* 18 additional wave formations'
                 byte $00
-dxline8         text '          purchase at'
+dxline8         text '* space station end scene and tune'
                 byte $00
-dxline9         text '   https://rgcd.bigcartel.com'
+dxline9         text 'buy now at https://lvcabral.itch.io'
                 byte $00
                 
 
@@ -593,10 +594,8 @@ logoColor       byte $00
 
 flowJoystick    byte $00
 
-vicMode         byte $00       ; 0=NTSC 1=PAL (set on game startup)
 vicReg1         byte $00
 vicReg2         byte $00
-sidCounter      byte $05       ; Counter to adjust PAL songs timing on NTSC
 
 #endregion
 #region Macros

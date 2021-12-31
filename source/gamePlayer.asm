@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gamePlayer.asm - Player ship control module
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -48,9 +48,10 @@ DynamicDestroyer        = 2
 ArcedAssailant          = 3
 RuthlessRetaliator      = 4
 
-ShieldSlow              = 1
-ShieldNormal            = 2
-ShieldFast              = 3
+ShieldSlow              = 2
+ShieldNormal            = 3
+ShieldFast              = 4
+ShieldRecovery          = 5
 
 ExplodeSprite           = AliensMax+4
 
@@ -77,11 +78,10 @@ playerSprite            = $3E
 shieldEnergy            = $3F
 
 shieldSpeed             = $19
-shieldRecover           = $1A
 
 ;===============================================================================
 ; Variables
-playerSpeedArray        byte 1, 1, 2, 2, 2
+playerSpeedArray        byte 1, 1, 2, 2, 1
 playerFrameArray        byte 0, 3, 6, 9, 12
 playerFrameIndex        byte 0
 playerColor             byte Cyan
@@ -92,28 +92,38 @@ playerXOffset           byte 0
 playerYChar             byte 0
 playerWillDie           byte False
 shieldColor             byte LightBlue
-shieldSpeedArray        byte ShieldSlow, ShieldNormal, ShieldNormal, ShieldFast
+shieldSpeedArray        byte ShieldNormal, ShieldSlow, ShieldNormal, ShieldSlow, ShieldSlow
 shieldY                 byte HideY
 fullWaves               byte 2
+fullWavesArray          byte 2, 2, 2, 3, 4
 
 ;===============================================================================
 ; Macros/Subroutines
+
+gamePlayerInit
+        lda #False
+        sta playerActive
+        sta shieldActive
+        sta playerFlyUp
+        rts
+
+;===============================================================================
 
 gamePlayerReset
         mva #True, playerActive
         lda #ShieldMaxEnergy
         sta shieldEnergy
         sta lastEnergy
-
         jsr gamePlayerSetupShield
-
+        lda #0
         sta playerFlyUp
         sta playerInertia
+        sta fullMode
         ; Debug: Full bulletsmode
 if FULLBULLETS = 1
-        lda #99
+        mva #99, fullWaves
+        jsr gPUBCFullAmmo
 endif
-        sta fullMode
         mva #AliensMax+1, playerSprite
 
         LIBMPLEX_SETFRAME_AA playerSprite, playerFrame
@@ -139,46 +149,13 @@ gamePlayerLoadConfig
         sta playerFrame
         lda playerSpeedArray,X
         sta playerSpeed
-        cpx #SturdyStriker
-        beq gPLCStableShield
-        cpx #RuthlessRetaliator
-        beq gPLCStableShield
-        mva #ShieldSlow, shieldSpeedArray + 0
-        mva #ShieldNormal, shieldSpeedArray + 1
-        mva #ShieldNormal, shieldSpeedArray + 2
-        mva #ShieldFast, shieldSpeedArray + 3
-        jmp gPLCSetFullWaves
-
-gPLCStableShield
-        lda levelNum
-        cmp #LevelNormal
-        bcc gPLCSlow
-        mva #ShieldNormal, shieldSpeed
-        jmp gPLCSetArray
-
-gPLCSlow
-        mva #ShieldSlow, shieldSpeed
-
-gPLCSetArray
-        mva shieldSpeed, shieldSpeedArray + 0
-        mva shieldSpeed, shieldSpeedArray + 1
-        mva shieldSpeed, shieldSpeedArray + 2
-        mva shieldSpeed, shieldSpeedArray + 3
-
-gPLCSetFullWaves
-        cpx #ArcedAssailant
-        bcs gPLCMoreWaves
-        mva #2, fullWaves
-        jmp gPLCSetColors
-
-gPLCMoreWaves
-        mva #3, fullWaves
-
-gPLCSetColors
+        lda fullWavesArray,X
+        sta fullWaves
+        lda shieldSpeedArray,X
+        sta shieldSpeed
         ldx shipColorIndex
         lda menuColorArray,X
         sta playerColor
-
         ldx shldColorIndex
         lda menuColorArray,X
         sta shieldColor
@@ -199,17 +176,17 @@ gamePlayerUpdate
         bne gPUFlyUp
 
         jsr gamePlayerUpdatePosition
-        jsr gamePlayerUpdateShieldEnergy
 
-        ; Don't fire or check collisions every frame
+        ; Don't process everything every frame
         lda aliensStep
         bne gPUCollision
 
+        jsr gamePlayerUpdateShieldEnergy
         jmp gamePlayerUpdateFiring
 
 gPUCollision
-        ; Debug: disable collision
 if NOCOLLISION = 1
+        ; Debug: disable collision
         jmp gPUDone
 endif
         jsr gamePlayerUpdateAmmoCollisions
@@ -230,8 +207,8 @@ gPUEndFlyUp
         cmp #LastStageCnt+1
         bcs gPUEndGame
 
-        mva cycles, time1
-        mva saveWaveTime, time2
+        mva cycles, timer1
+        mva saveWaveTime, timer2
         mva saveBomberTime, bomberTime
         GAMESTARS_COPYMAPROW_V StageEndY
         jmp gPUDone
@@ -254,7 +231,7 @@ gamePlayerMoveUp
         lda playerY
         cmp #PlayerStartY
         bcc gPMUFly
-        lda time2
+        lda timer2
         beq gPMUEndWait
         jmp gameFlowDecreaseTime
 
@@ -314,8 +291,15 @@ gPUBCMissile
 gPUBCFullAmmo
         mva fullWaves, fullMode
         LIBSOUND_PLAY_VAA CollectVoice, soundFullAmmoHigh, soundFullAmmoLow
-        jmp gameFlowFullAmmoDisplay
-
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX, #StatusY
+        LIBSCREEN_SETCHAR_V InfinityChar
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX, #StatusY
+        LIBSCREEN_SETCHAR_V PulsarColor
+        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+1, #StatusY
+        LIBSCREEN_SETCHAR_V InfinityChar+1
+        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+1, #StatusY
+        LIBSCREEN_SETCHAR_V PulsarColor
+        rts
 
 ;===============================================================================
 
@@ -373,7 +357,7 @@ gPUSCHit
         lda aliensTypeArray,X
         cmp #AlienShooter
         beq gPUSCShield
-        lda aliensStepArray,X   ; for probe or asteroid check if just
+        lda aliensHitsArray,X   ; for probe or asteroid check if just
         cmp #2                  ; 1 more hit is needed to be destroyed  
         bcc gPUSCDie            ; by the shield otherwise player dies
 
@@ -392,6 +376,10 @@ gPUSCDie
 ;===============================================================================
 
 gamePlayerKilled
+if IMMORTAL = 1
+        ; Debug: can't die
+        rts
+endif
         mva #False, playerActive
         ; run explosion animation
         LIBMPLEX_MULTICOLORENABLE_AV #ShieldSprite, True
@@ -571,7 +559,7 @@ gamePlayerUpdateShieldEnergy
 gPISERecoverEnergy        
         lda shieldEnergy
         clc
-        adc shieldRecover
+        adc #ShieldRecovery
         cmp #ShieldMaxEnergy
         bcs gPISEMax
         sta shieldEnergy

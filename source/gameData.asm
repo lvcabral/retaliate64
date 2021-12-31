@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameData.asm - Load/Save game data from/to Disk
 ;
-;  Copyright (C) 2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -19,9 +19,13 @@ DATAVERSION     = 1
 GAMEDATA        = $0340
 ; 1 byte for version of data file
 ; 3 bytes for highscore easy
+; 1 byte for stage easy
 ; 3 bytes for highscore normal
+; 1 byte for stage normal
 ; 3 bytes for highscore hard
+; 1 byte for stage hard
 ; 3 bytes for highscore extreme
+; 1 byte for stage extreme
 ; 1 byte for ship frame index
 ; 1 byte for ship color index
 ; 1 byte for shield color index
@@ -29,20 +33,27 @@ GAMEDATA        = $0340
 ; 1 byte for disable music (boolean)
 ; 1 byte for dificulty level index
 ; 1 byte for ships and medals lock bit flags
-ENDOFFILE       = $0354
-DATASIZE        = ENDOFFILE - GAMEDATA
+ENDOFFILE       = $0358
+DATASIZE        = ENDOFFILE - GAMEDATA ; 24 bytes
 HISCORES        = GAMEDATA+1
+SHIPFRAMEIDX    = GAMEDATA+17
+SHIPCOLORIDX    = GAMEDATA+18
+SHLDCOLORIDX    = GAMEDATA+19
+SOUNDFLAG       = GAMEDATA+20
+MUSICFLAG       = GAMEDATA+21
+DIFFLEVEL       = GAMEDATA+22
+UNLKFLAGS       = GAMEDATA+23
 
 ;===============================================================================
 ; Variables
 
-hiScoresOffset  byte 0, 3, 6, 9
+hiScoresOffset  byte 0, 4, 8, 12
 dataErrorFlag   byte 0
 
 diskErrorCode   byte 0
 
 scratch         byte $53,$30,$3A ;"s0:"
-fname           byte "retdata"
+fname           text "retdata"
 fname_end
 
 ;===============================================================================
@@ -51,44 +62,44 @@ fname_end
 gameDataLoad
         jsr gameDataLoadDisk
         lda dataErrorFlag
-        beq gDLCopy
-        rts                     ; return with any disk error
+        beq gDLCopy             ; return with any disk error
+        jmp gameDataClearHiScore
 
 gDLCopy
         ; Check data file version
         lda GAMEDATA
         cmp #DATAVERSION
-        beq gDLLoad
-        rts                     ; return with invalid or inexistent data file
+        beq gDLLoad             ; return with invalid or inexistent data file
+        jmp gameDataClearHiScore
 
 gDLLoad
         ; Copy data to global variables
-        lda GAMEDATA+13
+        lda SHIPFRAMEIDX
         cmp #PlayerMaxModels
         bcs gDLPlayer           ; Ignore if is invalid index
         sta playerFrameIndex
         sta modelFrameIndex
 
 gDLPlayer
-        lda GAMEDATA+14
+        lda SHIPCOLORIDX
         cmp #MaxColors
         bcs gDLShield           ; Ignore if is invalid index
         sta shipColorIndex
 
 gDLShield
-        lda GAMEDATA+15
+        lda SHLDCOLORIDX
         cmp #MaxColors
         bcs gDLShield           ; Ignore if is invalid index
         sta shldColorIndex
 
 gDLSfx
-        mva GAMEDATA+16, soundDisabled
+        mva SOUNDFLAG, soundDisabled
 
 gDLMusic
-        mva GAMEDATA+17, sidDisabled
+        mva MUSICFLAG, sidDisabled
 
 gDLLevel
-        ldx GAMEDATA+18
+        ldx DIFFLEVEL
         cpx #4
         bcs gDLLocked           ; Ignore if is invalid level
         stx levelNum
@@ -96,10 +107,10 @@ gDLLevel
 
 gDLLocked
 if UNLOCKALL = 1
-        ; Debug: Enable all ships and medals
-        lda #$FF
+        ; Debug: Enable all ships
+        lda #$0F
 else
-        lda GAMEDATA+19
+        lda UNLKFLAGS
 endif
         sta unlockFlags
         rts
@@ -118,24 +129,42 @@ gameDataGetHiScore
         lda HISCORES,Y
         sta hiscore1
         rts
+;===============================================================================
+
+gameDataClearHiScore
+        ldx #0
+        lda #0
+
+gDCHSLoop
+        sta HISCORES,X
+        inx
+        cpx #12
+        bcc gDCHSLoop
+if UNLOCKALL = 1
+        ; Debug: Enable all ships
+        lda #$0F
+        sta unlockFlags
+endif
+        rts
 
 ;===============================================================================
 
 gameDataSave
         ; Copy global variables data
         mva #DATAVERSION, GAMEDATA
-        mva playerFrameIndex, GAMEDATA+13
-        mva shipColorIndex, GAMEDATA+14
-        mva shldColorIndex, GAMEDATA+15
-        mva soundDisabled, GAMEDATA+16
-        mva sidDisabled, GAMEDATA+17
-        mva levelNum, GAMEDATA+18
-        mva unlockFlags, GAMEDATA+19
+        mva playerFrameIndex, SHIPFRAMEIDX
+        mva shipColorIndex, SHIPCOLORIDX
+        mva shldColorIndex, SHLDCOLORIDX
+        mva soundDisabled, SOUNDFLAG
+        mva sidDisabled, MUSICFLAG
+        mva levelNum, DIFFLEVEL
+        mva unlockFlags, UNLKFLAGS
         ; Clear error flag
         mva #0, dataErrorFlag
         ; Save data
         jmp gameDataSaveDisk
 ;===============================================================================
+
 gameDataLoadDisk
         ; Read data from disk
         mva #0, dataErrorFlag   ; Clear error flag
@@ -210,6 +239,7 @@ gSSDone
         rts
 
 ;===============================================================================
+
 setFileName
         lda #fname_end-fname
         ldx #<fname

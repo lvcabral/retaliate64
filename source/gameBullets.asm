@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameBullets.asm - Bullets control module
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;  Copyright (C) 2017 RetroGameDev - <https://www.retrogamedev.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying

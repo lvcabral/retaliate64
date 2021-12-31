@@ -5,7 +5,7 @@ out/
 
 bak/
 
-disk/
+release/
 
 *.dmp
 

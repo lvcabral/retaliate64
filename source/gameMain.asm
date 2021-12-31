@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameMain.asm - Main Game Loop
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -21,21 +21,27 @@
 ; Initialize
 
         ; Disable BASIC ROM
-        mva #$36, $01
+        mva #$36, R6510
 
         ; Disable shift + C= keys
-        mva $80, MODE
+        mva #$80, MODE
 
         ; Disable run/stop + restore keys
         mva #$FC, ISTOP
 
         ; Save VIC II mode (NTSC/PAL)
-        mva $02A6, vicMode
-        beq gARNTSC
+L1      lda RASTER
+L2      cmp RASTER
+        beq L2
+        bmi L1
+        cmp #$20
+        bcc gARNTSC
+        mva #1, vicMode
         lda #CyclesPAL
         jmp gARSetCycles
 
 gARNTSC
+        mva #0, vicMode
         lda #CyclesNTSC
 
 gARSetCycles
@@ -68,6 +74,7 @@ gARSetCycles
         jsr libMultiplexInit
 
         ; Initialize the game
+        jsr gamePlayerInit
         jsr gameAliensInit
         jsr gameFlowInit
         jsr gameStarsInit

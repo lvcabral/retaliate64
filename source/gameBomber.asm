@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameBomber.asm - Bomber control module
 ;
-;  Copyright (C) 2018,2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018,2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -15,7 +15,9 @@ BombRndArrayMax = 32
 BomberMaxPos    = 174
 BombMaxChars    = 6
 BombSpeed       = 3
-BombColor       = LightGreen
+MissileColor    = LightRed
+PulsarColor     = Cyan
+WaveColor       = LightGreen
 BomberColor     = Cyan
 BomberBack      = 20
 BomberFront     = 21
@@ -49,9 +51,9 @@ bombTypeRndArray  byte BombMissile, BombMissile, BombPulsar,  BombBouncer
                   byte BombBouncer, BombPulsar,  BombMissile, BombMissile
                   byte BombMissile, BombBouncer, BombPulsar,  BombMissile
                   byte BombMissile, BombMissile, BombBouncer, BombMissile
-                  byte BombMissile, BombPulsar,  BombMissile, BombMissile
+                  byte BombMissile, BombPulsar,  BombMissile, BombPulsar
                   byte BombMissile, BombBouncer, BombPulsar,  BombMissile
-                  byte BombBouncer, BombMissile, BombBouncer, BombMissile
+                  byte BombPulsar,  BombMissile, BombPulsar,  BombMissile
 bombTypeRndIndex  byte 0
 ; Bombs Characters for Animation
 missileDownArray  byte MissileDownChr+0, MissileDownChr+1, MissileDownChr+2
@@ -220,7 +222,7 @@ gameBomberUpdate
         rts
 
 gBUCheckTime
-        cmp time2
+        cmp timer2
         bcs gBUBegin
         rts
 
@@ -425,10 +427,6 @@ gBMDLeft
         inc bombXCharDown
 
 gBMDSkip
-        ; set the bomb color
-        LIBSCREEN_SETCOLORPOSITION_AA bombXCharDown, bombYCharDown
-        LIBSCREEN_SETCHAR_V BombColor
-
         ; set the bomb character
         LIBSCREEN_SETCHARPOSITION_AA bombXCharDown, bombYCharDown
         inc bombCharIndexDown
@@ -443,18 +441,25 @@ gBMDSelChar
         cmp #BombPulsar
         bcc gBMDMissile
         beq gBMDPulsar
+        mva #WaveColor, ZeroPageTemp
         lda bouncerDownArray,X
         jmp gBMDSetChar
 
 gBMDPulsar
+        mva #PulsarColor, ZeroPageTemp
         lda pulsarDownArray,X
         jmp gBMDSetChar
 
 gBMDMissile
+        mva #MissileColor, ZeroPageTemp
         lda missileDownArray,X
 
 gBMDSetChar
         LIBSCREEN_SETCHAR_ACC
+        ; set the bomb color
+        LIBSCREEN_SETCOLORPOSITION_AA bombXCharDown, bombYCharDown
+        LIBSCREEN_SETCHAR_A ZeroPageTemp
+        ; Clear delay
         mva #0, bombDelayDown
         rts
 
@@ -476,10 +481,6 @@ gameBombsMoveUp
         rts
 
 gBMUDraw
-        ; set the bomb color
-        LIBSCREEN_SETCOLORPOSITION_AA bombXCharUp, bombYCharUp
-        LIBSCREEN_SETCHAR_V BombColor
-
         ; set the bomb character
         LIBSCREEN_SETCHARPOSITION_AA bombXCharUp, bombYCharUp
         inc bombCharIndexUp
@@ -493,14 +494,20 @@ gBMUSelChar
         lda bombLaunched
         cmp #BombBouncer
         bne gBMUMissile
+        mva #WaveColor, ZeroPageTemp
         lda bouncerUpArray,X
         jmp gBMUSetChar
 
 gBMUMissile
+        mva #MissileColor, ZeroPageTemp
         lda missileUpArray,X
 
 gBMUSetChar
         LIBSCREEN_SETCHAR_ACC
+        ; set the bomb color
+        LIBSCREEN_SETCOLORPOSITION_AA bombXCharUp, bombYCharUp
+        LIBSCREEN_SETCHAR_A ZeroPageTemp
+        ; Clear delay
         mva #0, bombDelayUp
         rts
 

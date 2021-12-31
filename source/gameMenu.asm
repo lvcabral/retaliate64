@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameMenu.asm - Game Main Menu
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -21,6 +21,11 @@ Logo1stFrame = 58
 HangarFrame  = 65
 LockedFrame  = 15
 
+HiEasyY      = 10
+HiNormalY    = 11
+HiHardY      = 12
+HiExtremeY   = 13
+
 MedalSpot    = 28
 MedalEasy    = MedalSpot+1
 MedalNormal  = MedalSpot+2
@@ -32,7 +37,7 @@ UnlockedSprX = 42
 UnlockedSprY = 212
 
 MessageTime  = 2
-GameOverTime = 6
+GameOverTime = 8
 
 LevelEasy    = 0
 LevelNormal  = 1
@@ -52,10 +57,11 @@ MenuCursor   = 94
 
 StatsScoreX  = 27
 StatsX       = 29
-StatsScoreY  = 16
-StatsBulletY = StatsScoreY+1
-StatsBombY   = StatsScoreY+2
-StatsAliensY = StatsScoreY+3
+StatsScoreY  = 15
+StatsStageY  = StatsScoreY+1
+StatsBulletY = StatsScoreY+2
+StatsBombY   = StatsScoreY+3
+StatsAliensY = StatsScoreY+4
 
 MaxColors    = 12
 
@@ -65,7 +71,7 @@ MaxColors    = 12
 Operator Calc
 
 ; 7 screens x 14 rows x 40 characters
-MAPCOLORRAM = MAPRAM + (7 * 14 * 40)
+MAPCOLORRAM = MAPRAM + (7 * 15 * 40)
 
 ; increments are 7 screens x 40 characters per row (280)
 CCT1 = 7 * 40
@@ -81,32 +87,33 @@ CCTA = CCT1 * 10
 CCTB = CCT1 * 11
 CCTC = CCT1 * 12
 CCTD = CCT1 * 13
+CCTE = CCT1 * 14
 
 MapRAMRowStartLow
         byte <MAPRAM,      <MAPRAM+CCT1, <MAPRAM+CCT2, <MAPRAM+CCT3
         byte <MAPRAM+CCT4, <MAPRAM+CCT5, <MAPRAM+CCT6, <MAPRAM+CCT7
         byte <MAPRAM+CCT8, <MAPRAM+CCT9, <MAPRAM+CCTA, <MAPRAM+CCTB
-        byte <MAPRAM+CCTC, <MAPRAM+CCTD
+        byte <MAPRAM+CCTC, <MAPRAM+CCTD, <MAPRAM+CCTE
 
 MapRAMRowStartHigh
         byte >MAPRAM,      >MAPRAM+CCT1, >MAPRAM+CCT2, >MAPRAM+CCT3
         byte >MAPRAM+CCT4, >MAPRAM+CCT5, >MAPRAM+CCT6, >MAPRAM+CCT7
         byte >MAPRAM+CCT8, >MAPRAM+CCT9, >MAPRAM+CCTA, >MAPRAM+CCTB
-        byte >MAPRAM+CCTC, >MAPRAM+CCTD
+        byte >MAPRAM+CCTC, >MAPRAM+CCTD, >MAPRAM+CCTE
 
 MapRAMCOLRowStartLow
         byte <MAPCOLORRAM,      <MAPCOLORRAM+CCT1, <MAPCOLORRAM+CCT2
         byte <MAPCOLORRAM+CCT3, <MAPCOLORRAM+CCT4, <MAPCOLORRAM+CCT5
         byte <MAPCOLORRAM+CCT6, <MAPCOLORRAM+CCT7, <MAPCOLORRAM+CCT8
         byte <MAPCOLORRAM+CCT9, <MAPCOLORRAM+CCTA, <MAPCOLORRAM+CCTB
-        byte <MAPCOLORRAM+CCTC, <MAPCOLORRAM+CCTD
+        byte <MAPCOLORRAM+CCTC, <MAPCOLORRAM+CCTD, <MAPCOLORRAM+CCTE
 
 MapRAMCOLRowStartHigh
         byte >MAPCOLORRAM,      >MAPCOLORRAM+CCT1, >MAPCOLORRAM+CCT2
         byte >MAPCOLORRAM+CCT3, >MAPCOLORRAM+CCT4, >MAPCOLORRAM+CCT5
         byte >MAPCOLORRAM+CCT6, >MAPCOLORRAM+CCT7, >MAPCOLORRAM+CCT8
         byte >MAPCOLORRAM+CCT9, >MAPCOLORRAM+CCTA, >MAPCOLORRAM+CCTB
-        byte >MAPCOLORRAM+CCTC, >MAPCOLORRAM+CCTD
+        byte >MAPCOLORRAM+CCTC, >MAPCOLORRAM+CCTD, >MAPCOLORRAM+CCTE
 
 Operator HiLo
 
@@ -114,7 +121,7 @@ menuDisplayed   byte 0
 menuTimer       byte 0
 menuOption      byte 0
 hangarOption    byte 0
-hangarXArray    byte LogoXPos+24, LogoXPos+48, LogoXPos+72
+hlogoXArray     byte LogoXPos+24, LogoXPos+48, LogoXPos+72
                 byte LogoXPos+96, LogoXPos+120
 logoXArray      byte LogoXPos   , LogoXPos+24, LogoXPos+48, LogoXPos+72
                 byte LogoXPos+96, LogoXPos+120, LogoXPos+144
@@ -205,17 +212,17 @@ gMSLHide
 gameMenuShowBoards
         ; Show HiScores Board
         ldx #0
-        mva #21, ZeroPageParam1
-        mva #10, ZeroPageParam2
+        mva #HiPanelX, ZeroPageParam1
+        mva #HiEasyY, ZeroPageParam2
         jsr gameMenuShowScore
-        mva #21, ZeroPageParam1
-        mva #11, ZeroPageParam2
+        mva #HiPanelX, ZeroPageParam1
+        mva #HiNormalY, ZeroPageParam2
         jsr gameMenuShowScore
-        mva #21, ZeroPageParam1
-        mva #12, ZeroPageParam2
+        mva #HiPanelX, ZeroPageParam1
+        mva #HiHardY, ZeroPageParam2
         jsr gameMenuShowScore
-        mva #21, ZeroPageParam1
-        mva #13, ZeroPageParam2
+        mva #HiPanelX, ZeroPageParam1
+        mva #HiExtremeY, ZeroPageParam2
         jsr gameMenuShowScore
 
         ; Show Medals Board
@@ -324,6 +331,14 @@ gMSCLoop
         lda ZeroPageTemp
         cmp #3
         bcc gMSCLoop
+        LIBMATH_ADD8BIT_AVA ZeroPageParam1, MenuStageOff, ZeroPageParam1
+        LIBSCREEN_SETCHARPOSITION_AA ZeroPageParam1, ZeroPageParam2
+        lda HISCORES,X
+        sta ZeroPageParam1
+        beq gMSCReturn
+        LIBSCREEN_SETCHAR_A ZeroPageParam1
+gMSCReturn
+        inx
         rts
 
 ;===============================================================================
@@ -381,7 +396,7 @@ gameMenuShowHangar
 gMSHLoop
         inc spriteId ; x+1
         mva #LightBlue, spriteColor
-        lda hangarXArray,X
+        lda hlogoXArray,X
         sta spriteX
         jsr gameMenuLogoSetup
         ; loop for each frame
@@ -425,12 +440,12 @@ gameMenuShowText
         ; set screen offset
         LIBSCREEN_SETOFFSET_A screenColumn
         ; screen text
-repeat 0, 13, idx
-        LIBSCREEN_COPYMAPROW_VV idx, idx+8
+repeat 0, 14, idx
+        LIBSCREEN_COPYMAPROW_VV idx, idx+7
 endrepeat
         ; screen colors
-repeat 0, 13, idx
-        LIBSCREEN_COPYMAPROWCOLOR_VV idx, idx+8
+repeat 0, 14, idx
+        LIBSCREEN_COPYMAPROWCOLOR_VV idx, idx+7
 endrepeat
         rts
 
@@ -729,6 +744,11 @@ gameMenuShowStats
         LIBSCREEN_DRAWDECIMAL_AAA #StatsScoreX, #StatsScoreY, score3
         LIBSCREEN_DRAWDECIMAL_AAA #StatsScoreX+2, #StatsScoreY, score2
         LIBSCREEN_DRAWDECIMAL_AAA #StatsScoreX+4, #StatsScoreY, score1
+
+        LIBSCREEN_SETCHARPOSITION_AA #StatsX+1, #StatsStageY
+        LIBSCREEN_SETCHAR_A stageNumChar
+        LIBSCREEN_SETCHARPOSITION_AA #StatsX+3, #StatsStageY
+        LIBSCREEN_SETCHAR_V LastStageCnt+$31
 
         LIBSCREEN_DRAWDECIMAL_AAA #StatsX, #StatsBulletY, bullets2
         LIBSCREEN_DRAWDECIMAL_AAA #StatsX+2, #StatsBulletY, bullets1

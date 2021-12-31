@@ -24,10 +24,9 @@ GenerateTo testsound.prg
 ;===============================================================================
 ; Libraries
 
-        incasm libMemory.asm
-        incasm libInput.asm
-        incasm libSound.asm
-        incasm libMath.asm
+        incasm "libDefines.asm"
+        incasm "libInput.asm"
+        incasm "libSound.asm"
 
 ;===============================================================================
 ; Menu String

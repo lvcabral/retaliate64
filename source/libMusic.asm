@@ -3,7 +3,7 @@
 ; Plays nicely with the sound effects from libSound!
 ;
 ;  Copyright (C) 2018 Dion Olsthoorn - <http://www.dionoidgames.com>
-;  Copyright (C) 2018 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -18,7 +18,7 @@ SIDREGSTART  = FRELO1
 ;===============================================================================
 ; Page Zero
 
-musicOff     = $8E
+sidDisabled  = $8E               ; Flag to disable Music
 
 ;===============================================================================
 ; Variables
@@ -27,18 +27,17 @@ vicMode           byte 0         ; 0=NTSC 1=PAL (set on game startup)
 sidCounter        byte 5         ; Counter to adjust PAL songs timing on NTSC
 sidRegisterBuffer dcb 25, 0      ; SID register buffer
 sidFilterCtrlMask byte %11111000 ; mask for the SID's filter control register
-sidDisabled       byte 0         ; Flag to disable Music
 
 ;===============================================================================
 ; Macros/Subroutines
 
 libMusicInit
         ; Push current ROM/RAM setup to stack
-        lda $01
+        lda R6510
         pha
         sei
         ; Switch to I/O ROM only mode
-        mva #$35, $01
+        mva #$35, R6510
         ; Call SID init subroutine
         lda #SIDGAMELOOP
         tax
@@ -47,14 +46,14 @@ libMusicInit
 
         ; Switch back to previous RAM/ROM setup
         pla
-        sta $01
+        sta R6510
         cli
         rts
 
 ;===============================================================================
 
 libMusicMixedUpdate
-        lda musicOff
+        lda sidDisabled
         bne lMUDone
 
         ; Skip counter in PAL machines
@@ -76,11 +75,11 @@ lMUDone
 
 sidPlayMixed
         ; Push current ROM/RAM setup to stack
-        lda $01
+        lda R6510
         pha
         sei
         ; Switch to RAM only
-        mva #$34, $01
+        mva #$34, R6510
 
         ; Call SID play subroutine
         ; This results in shadow RAM at $d400-$d418 getting modified
@@ -97,7 +96,7 @@ sidPlayMixed
 
         ; Switch back to previous RAM/ROM setup
         pla
-        sta $01
+        sta R6510
         cli
         ; check soundVoiceActive (libSound) to see which SID voices are active
         ; only write registers from sidRegisterBuffer back to $d400-$d418 

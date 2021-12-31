@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  libScreen.asm - VIC II Screen related Macros
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;  Copyright (C) 2017 RetroGameDev - <https://www.retrogamedev.com>
 ;  Copyright (C) 2017 Dion Olsthoorn - <http://www.dionoidgames.com>
 ;
@@ -1052,6 +1052,23 @@ defm    LIBSCREEN_SETMULTICOLORMODE
         ora #%00010000 ; set bit 5
         sta SCROLX
 
+        endm
+
+
+;===============================================================================
+
+defm LIBSCREEN_SETDISPLAYENABLE
+        lda SCROLY
+        ora #%00010000      ; Set bit 4
+        sta SCROLY
+        endm
+
+;===============================================================================
+
+defm LIBSCREEN_SETDISPLAYDISABLE
+        lda SCROLY
+        and #%11101111     ; Clear bit 4
+        sta SCROLY
         endm
 
 ;===============================================================================

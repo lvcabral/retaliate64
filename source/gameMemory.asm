@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameMemory.asm - Game Memory Map
 ;
-;  Copyright (C) 2017-2020 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -15,7 +15,7 @@
                 ; $10-$15   Used on gameWaves.asm
                 ; $16-$18   Used on libMultiplex.asm
                 ; $19-$1A   Used on gamePlayer.asm
-                ; $20-$2F   Used on gameAliens.asm
+                ; $1D-$2F   Used on gameAliens.asm
                 ; $30-$3F   Used on gamePlayer.asm
                 ; $40-$61   Used on libMultiplex.asm
                 ; $72-$7D   Temporary variables for libraries
@@ -89,11 +89,11 @@ FiringVoice     = $01
 
 ; SID music
 SIDINIT         = $C000
-SIDPLAY         = $C003
+SIDPLAY         = SIDINIT + 3
 SIDGAMELOOP     = $00   ; Id of the song (inside the SID file)
 
 * = $C000
-        incbin "music.sid", $7E
+        incbin "..\assets\music.sid", $7E
 
 ;===============================================================================
 ; $D000-$DFFF  IO (4K)

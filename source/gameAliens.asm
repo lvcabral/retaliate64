@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameAliens.asm - Aliens control module
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -31,15 +31,24 @@ AlienHard             = 70
 AlienDamaged          = AlienHard+5
 AsteroidFrame         = 46
 
+AsteroidsDelayMax     = 3
+
 AsteroidColor         = MediumGray
 AlienHardColor        = MediumGray
 AlienDamagedColor     = LightGray
 
 AnimaSpeed            = 7
 
+KilledByShield        = $05
+KilledByBullet        = $10
+KilledByBomb          = $15 
+
 ;===============================================================================
 ; Page Zero
 
+minesStage            = $1D
+minesShow             = $1E
+aliensWaves           = $1F
 aliensActive          = $20
 aliensCount           = $21
 aliensStep            = $22
@@ -93,7 +102,7 @@ alienShooterStart     byte   0
 alienShooterEnd       byte   0
 alienShooterColor     byte  Green
 
-aliensStepArray       dcb   AliensMax, 0
+aliensHitsArray       dcb   AliensMax, 0
 asteroidsStartArray   byte  AsteroidFrame, AsteroidFrame+4, AsteroidFrame+8
 asteroidsEndArray     byte  AsteroidFrame+3, AsteroidFrame+7, AsteroidFrame+11
 
@@ -102,27 +111,60 @@ rndSeed               byte   0
 ;===============================================================================
 ; Jump Tables
 
-ntscSpeedTableLow     byte  <ntscSpeedEasy, <ntscSpeedNormal
-                      byte  <ntscSpeedHard, <ntscSpeedExtreme
-ntscSpeedTableHigh    byte  >ntscSpeedEasy, >ntscSpeedNormal
-                      byte  >ntscSpeedHard, >ntscSpeedExtreme
+ntscSpeedTableLow     byte  <ntscSpeedSlow, <ntscSpeedNormal
+                      byte  <ntscSpeedFast, <ntscSpeedWarp
+ntscSpeedTableHigh    byte  >ntscSpeedSlow, >ntscSpeedNormal
+                      byte  >ntscSpeedFast, >ntscSpeedWarp
 
-palSpeedTableLow      byte  <palSpeedEasy, <palSpeedNormal
-                      byte  <palSpeedHard, <palSpeedExtreme
-palSpeedTableHigh     byte  >palSpeedEasy, >palSpeedNormal
-                      byte  >palSpeedHard, >palSpeedExtreme
+palSpeedTableLow      byte  <palSpeedSlow, <palSpeedNormal
+                      byte  <palSpeedFast, <palSpeedWarp
+palSpeedTableHigh     byte  >palSpeedSlow, >palSpeedNormal
+                      byte  >palSpeedFast, >palSpeedWarp
 
 ;==============================================================================
 ; Macros/Subroutines
 
 gameAliensInit
+        lda #0
+        sta wavesIndex
+        sta wavesActive
+        sta aliensStep
+        sta aliensCount
+        sta minesShow
+        rts
+
+;==============================================================================
+
+gameAliensReset
+if NUMOFWAVES < 2
+        ; Number of waves to change stages
+        ldx levelNum
+        lda stagesWavesArray,X
+        sta aliensWaves
+else
+        mva #NUMOFWAVES, alienWaves
+endif
+        ; Calculate first stage with Mines based on Difficulty Level
+        LIBMATH_SUB8BIT_VAA 3, levelNum, minesStage
+
+        ; Get first Wave index
+        ldx wavesIndex
+if STARTWAVE = 0
+        lda startWaveArray,X
+else
+        lda #STARTWAVE
+endif
+        sta wavesIndex
+        jsr gANWConfigWave      ; expects A containing # of the wave
         ; Calculate Aliens X high/low position tables
+
         ldx #0
         stx asteroidsXMove
         stx asteroidsDelay
+        stx minesShow
         stx aliensSprite
 
-gAILoop
+gARLoop
         inc aliensSprite
         lda aliensXArray,X
         sta aliensX
@@ -139,28 +181,14 @@ gAILoop
         ; loop for each alien
         inx
         cpx #AliensMax
-        bcc gAILoop
-        rts
-
-;==============================================================================
-
-gameAliensReset
-        ldx wavesIndex
-if STARTWAVE = 0
-        lda startWaveArray,X
-else
-        lda #STARTWAVE
-endif
-        sta wavesIndex
-        jsr gANWConfigWave      ; expects A containing # of the wave
-        jsr gameAliensInit
+        bcc gARLoop
         ; the next routine must be gameAliensWaveReset (don't move)
 
 ;==============================================================================
 
 gameAliensWaveReset
         lda aliensCountWaves
-        cmp #AliensStageWaves
+        cmp aliensWaves
         beq gAWRAsteroids
         bcs gAWRStageEnd
         lda flowStageCnt
@@ -171,7 +199,6 @@ gameAliensWaveReset
 gAWRStageEnd
         inc flowStageCnt
         inc flowStageIndex
-        ldy flowStageIndex
         jmp gAWRNextStage
 
 gAWRLastStage
@@ -184,14 +211,15 @@ gAWRGameOver
         inc flowStageCnt
         mva #GameEnd, playerFlyUp
         LIBMATH_SUB8BIT_AVA playerY, PlayerVerticalSpeed, playerY
-        mva #FlyUpWaitTime, time2
+        mva #FlyUpWaitTime, timer2
         jsr gameBulletsReset
         jsr gameBombsReset
         jmp gameFlowEndMessage
 
 gAWRAsteroids
-        mva aliensStep, asteroidsDelay
-        mva #True, asteroidsXMove
+        mva #0, Frame
+        mva #1, asteroidsDelay
+        sta asteroidsXMove
         lda wavesIndex
         lsr A
         bcc gAWREven
@@ -210,8 +238,6 @@ gAWRNextStage
         sta asteroidsDelay
         mva #StageEnd, playerFlyUp
         LIBMATH_SUB8BIT_AVA playerY, PlayerVerticalSpeed, playerY
-        ldx stagesLevelArray,Y
-        stx flowLevel
         jsr gameFlowSkillLevel
         jsr gameBulletsReset
         jsr gameBombsReset
@@ -267,25 +293,21 @@ gAWRSetType
         cmp #AlienOrb
         beq gAWSetOrb
 if MINESFROMSTART  = 0
-        ; Don't show Mines on first waves of the first stage
-        ldy flowStageCnt
+        ldy minesShow
         bne gAWRSetStep
-        ldy aliensCountWaves
-        cpy #AliensStageWaves-2
-        bcs gAWRSetStep
         mva #AlienProbe, aliensType
 endif
-gAWRSetStep
-        sta aliensStepArray,X
-        jmp gAWRSetSprite
+        jmp gAWRSetStep
         
 gAWAsteroids
         lda #0
-        sta aliensStepArray,X
+
+gAWRSetStep
+        sta aliensHitsArray,X
         jmp gAWRSetSprite
 
 gAWSetOrb
-        sta aliensStepArray,X
+        sta aliensHitsArray,X
 
 gAWSetXPosition
         lda aliensXMoveIndexDef,X
@@ -308,10 +330,10 @@ gAWRSetSprite
 gAWActivateWave
         mva #True, wavesActive
         ; reset wave timer
-        mva cycles, time1
+        mva cycles, timer1
         ldy wavesIndex
         lda wavesTimeArray,Y
-        sta time2
+        sta timer2
         lda wavesBomberArray,Y
         sta bomberTime
         beq gAWRCheck
@@ -321,8 +343,8 @@ gAWRCheck
         ; check if end of stage
         lda playerFlyUp
         beq gAWRNext
-        mva time2, saveWaveTime
-        mva #FlyUpWaitTime, time2
+        mva timer2, saveWaveTime
+        mva #FlyUpWaitTime, timer2
         mva bomberTime, saveBomberTime
         mva #0, bomberTime
 
@@ -369,7 +391,7 @@ gAUFinish
         lda asteroidsXMove
         beq gAUReturn
         lda asteroidsDelay
-        cmp #3
+        cmp #AsteroidsDelayMax
         bcc gAUNext
         mva #0, asteroidsDelay
         jmp gAUReturn
@@ -473,7 +495,7 @@ gAUPIIncMove
 
 gAUPIMoveUp
         mva #AliensYStart, aliensY
-        lda time2
+        lda timer2
         beq gAUPIFinishWave
 
 gAUPIResetSprite
@@ -487,7 +509,7 @@ gAUPIResetSprite
         jmp gAUPISetVerticalPos
 
 gAUPIResetMine
-        sta aliensStepArray,X
+        sta aliensHitsArray,X
         LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AlienHard, AlienHard+4, AnimaSpeed, True
         LIBMPLEX_SETCOLOR_AV aliensSprite, AlienHardColor
         jmp gAUPISetVerticalPos
@@ -497,7 +519,7 @@ gAUPIResetAsteroid
         LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AsteroidFrame, AsteroidFrame+3, AnimaSpeed, True
 
         lda #0
-        sta aliensStepArray,X
+        sta aliensHitsArray,X
 
 gAUPIRestoreX
         lda aliensXArray,X              ; X must contain alien index
@@ -667,27 +689,27 @@ gAUCCheckBullet
         dec bulletsActiveUp
         lda aliensType
         cmp #AlienMine
-        bcs gAUCCheckStep
-        lda #$10                 ;killed by bullet
+        bcs gAUCCheckHits
+        lda #KilledByBullet
         jmp gAUCKill
 
 gAUCCheckBomb
         GAMEBOMB_COLLIDED_Up_AA aliensXChar, aliensYChar
         beq gAUCNoCollision
-        lda #$15                 ;killed by bomb
+        lda #KilledByBomb
         jmp gAUCKill
 
 gAUCNoCollision
         rts
 
-gAUCCheckStep
+gAUCCheckHits
         ldx aliensIndex
-        ldy aliensStepArray,X
+        ldy aliensHitsArray,X
         cpy #2
         bcc gAUCNextStep
         lda #0
         sta aliensFire
-        lda #$10                 ;killed by bullet
+        lda #KilledByBullet
         jmp gAUCKill
 
 gAUCNextStep
@@ -695,14 +717,14 @@ gAUCNextStep
         cmp #Asteroid           ; A register still has alien type
         beq gAUCNextFrame
         tya
-        sta aliensStepArray,X
+        sta aliensHitsArray,X
         LIBMPLEX_SETCOLOR_AV aliensSprite, AlienDamagedColor
         LIBMPLEX_PLAYANIM_AVVVV aliensSprite, AlienDamaged, AlienDamaged+4, AnimaSpeed, True
         rts
 
 gAUCNextFrame
         tya
-        sta aliensStepArray,X
+        sta aliensHitsArray,X
         lda asteroidsStartArray,Y
         sta ZeroPageTemp1
         lda asteroidsEndArray,Y
@@ -711,7 +733,7 @@ gAUCNextFrame
         rts
 
 gAUCShield
-        lda #$05                 ;killed by shield
+        lda #KilledByShield
 
 gAUCKill
         sta aliensScore
@@ -749,7 +771,7 @@ gameAliensUpdateInactive
         sta aliensY
         cmp #MAXSPRY
         bcs gAMIMoveUp
-        lda time2
+        lda timer2
         bne gAUIVerify
         rts
 
@@ -758,7 +780,7 @@ gAMIMoveUp
         mva #AliensRespawnDelay-1, aliensRespawn
 
 gAUICheckTime
-        lda time2
+        lda timer2
         bne gAUIVerify
         inc aliensCount
         rts
@@ -854,4 +876,20 @@ gANWConfigWave
         sta wavesFormationLow
         lda wavesTableHigh,X
         sta wavesFormationHigh
+
+        lda flowStageCnt
+        cmp minesStage  ; Only show Mines on later stages
+        bcc gANWNoMine
+        lda rndSeed
+        and #3          ; only show Mines 25% of the time
+        bne gANWNoMine
+        lda #True
+        jmp gANWReturn
+
+gANWNoMine
+        lda #False
+
+gANWReturn
+        sta minesShow
+
         rts

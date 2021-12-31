@@ -1,5 +1,29 @@
 ## Retaliate 64 - Changelog
 
+##### v1.00 - Dec-2021 - Community Edition Release
+
+- Mines starts to appear later in the game, however on each level it shows one stage earlier
+- Reduced # of Mines per wave and on the stages with Mines these will appear only 25% of the time
+- Increased the number of Full Ammo Waves on some Ship models
+- Reduced the speed of Ruthless Retaliator
+- Balanced the Number of times each bomb type shows up
+- Reduced the number of waves per stage going from 4(Easy) to 7(Extreme)
+- Reduced the speed of each stage
+- Reduced overall Shield Speed on consumption and made recovery constant
+- Improved Orbs boucing array to make it swing around the start position
+- Shield speed changed to be based on ship model
+- Renamed Bullets to Phasers on screen and made each bomb type a different color
+- Changed M key to only turn the music on/off during the game not the SFX
+- Final Stage now shows on Mission Stats screen and on Menu High Score Panel
+- Final Stage now saved with High Score to the data file
+- Fixed: Asteroids wave was randomly not moving on the X axis
+- Fixed: Disabling Shift+C= keys code
+- Fixed: UNLOCKALL debug switch now works when RETDATA does not exist and only unlock ships
+- Fixed: Full Bullets debug switch to not be disabled when Full Ammo bomb is collected
+- Updated credits screen with 2021 as release year
+- Moved music and splash files to assets folder
+- Several small code optimizations
+
 ##### v0.99 - Feb-2020 - New Loader DX screen
 
 - Update version text on credits screen
@@ -137,4 +161,4 @@ The main additions/changes to the code from the book were:
 
 ---
 Original repository <https://github.com/lvcabral/retaliate64>
-Copyright (C) 2017,2018 Marcelo Lv Cabral - <https://lvcabral.com>
+Copyright (C) 2017-2022 Marcelo Lv Cabral - <https://lvcabral.com>

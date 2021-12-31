@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameFlow.asm - Game Flow Control
 ;
-;  Copyright (C) 2017-2019 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2017-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -38,8 +38,8 @@ HangarMenuShip  = #8
 ;===============================================================================
 ; Page Zero
 
-time1           = $0A
-time2           = $0B
+timer1          = $0A
+timer2          = $0B
 cycles          = $0C
 frame           = $0D
 speedTableLow   = $0E
@@ -73,8 +73,6 @@ bombs2          byte 0
 
 aliens1         byte 0
 aliens2         byte 0
-
-flowMute        byte 0
 
 flowJoystick    byte 0
 
@@ -399,7 +397,6 @@ gameFlowStartGame
         jsr gameStarsScreen
         jsr gameFlowInit
         jsr gameFlowShowGameStatus
-        LIBSCREEN_SETCHARMEMORY CHARSETPOSGAME
         lda rndSeed
         beq gFSGSeed
         ; Get next Bomb Type
@@ -409,11 +406,13 @@ gameFlowStartGame
 
 gFSGSeed
         ; Generate Random Seed
-        jsr RDTIM
+        sei
+        lda TIME2
+        cli
         cmp #0
         beq gFSGSeed
         clc
-        adc time1
+        adc timer1
         sta rndSeed
         ; Use seed to set first bomb type
         tax
@@ -435,8 +434,9 @@ endif
         ldx levelNum
         lda stagesOffsetArray,X
         sta flowStageIndex
-        stx flowLevel
         jsr gameFlowSkillLevel
+        ; load player ship configuration
+        jsr gamePlayerLoadConfig
         mva #OneCharacter, stageNumChar
         ; reset game
         lda #MenuGameOver
@@ -455,26 +455,18 @@ endif
         ; change state
         mva #FlowStateAlive, flowState
         ; set SID state
-        lda sidDisabled
-        and soundDisabled
-        sta flowMute
-        mva sidDisabled, musicOff
         jmp libMusicInit
 
 ;===============================================================================
 
 gameFlowSkillLevel
-        ;current level must be on register X
+        ldy flowStageIndex
+        ldx stagesLevelArray,Y
+        stx flowLevel
         lda bulletSpeedArray,X
         sta bulletSpeed
-        lda shieldSpeedArray,X
-        sta shieldSpeed
-        sta shieldRecover
-        inc shieldRecover
-
         lda wavesLevelTable,X
         sta wavesLevelIndex
-
         mva #0, aliensCountWaves
         lda vicMode
         bne gFSLPal
@@ -548,7 +540,7 @@ gFUACheckKey
         cmp #KEY_SPACE
         beq gFUAPause
         cmp #KEY_M
-        beq gFUAMute
+        beq gameFlowMuteSwitch
         rts
 
 gFUAPause
@@ -563,51 +555,37 @@ gFUAPlay
         dec flowPaused
         jmp libSoundInit
 
-gFUAMute
-        jsr gameFlowMuteSwitch
-        beq gFUAReturn
-        jmp libSoundInit
-
-gFUAReturn
-        rts
-
 ;===============================================================================
 
 gameFlowMuteSwitch
-        lda flowMute
-        beq gFMSMute
-        lda #0
-        jmp gFMSDone
-
-gFMSMute
-        lda #1
-
-gFMSDone
-        sta flowMute
-        sta soundDisabled
-        sta sidDisabled
-        sta musicOff
+        lda sidDisabled
+        beq gFMSDisable
+        mva #False, sidDisabled
         rts
+
+gFMSDisable
+        mva #True, sidDisabled
+        jmp libSoundInit
 
 ;===============================================================================
 
 gameFlowUpdateDying
         lda playerFlyUp
         beq gFUDExploding
-        mva #GameOverDelay, time1
-        mva #1, time2
+        mva #GameOverDelay, timer1
+        mva #1, timer2
         mva #0, playerFlyUp
         rts
 
 gFUDExploding
         LIBMPLEX_ISANIMPLAYING_A #ExplodeSprite
         beq gFUDDelay
-        mva #GameOverDelay, time1
-        mva #1, time2
+        mva #GameOverDelay, timer1
+        mva #1, timer2
         rts
 
 gFUDDelay
-        lda time2
+        lda timer2
         cmp #1
         bne gFUDDecrease
         jsr libMultiplexReset
@@ -669,46 +647,50 @@ gameFlowResetScore
 ;===============================================================================
 
 gameFlowResetScreenTime
-        mva cycles, time1
+        mva cycles, timer1
         lda flowMenuTimes,Y
-        sta time2
+        sta timer2
         rts
 
 ;===============================================================================
 
 gameFlowResetGameOverTime
-        mva cycles, time1
-        mva #GameOverTime, time2
+        mva cycles, timer1
+        mva #GameOverTime, timer2
         rts
 
 ;===============================================================================
 
 gameFlowResetMsgTime
-        mva cycles, time1
-        mva #MessageTime, time2
+        mva cycles, timer1
+        mva #MessageTime, timer2
         rts
 
 ;===============================================================================
 
 gameFlowDecreaseTime
-        lda time2
+        lda timer2
         beq gFDTDone
         sed             ; set decimal mode
         sec             ; sec is the same as clear borrow
-        lda time1       ; Get first number
+        lda timer1       ; Get first number
         sbc #$01        ; Subtract 1
-        sta time1       ; Store in first number
-        lda time2       ; Get 2nd first number
+        sta timer1       ; Store in first number
+        lda timer2       ; Get 2nd first number
         sbc #$00        ; Subtract borrow
-        sta time2       ; Store 2nd number
-        lda time1
+        sta timer2       ; Store 2nd number
+        lda timer1
         cmp #$99
         bne gFDTContinue
         lda cycles      ; 60 NTSC / 50 PAL
-        sta time1
+        sta timer1
 gFDTContinue
 if SHOWTIMER = 1
-        jsr gameFlowTimeDisplay
+        ; Debug routine to display timer
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+3, #ScoreY, #$00, White
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+5, #ScoreY, timer2, White
+        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+7, #ScoreY, timer1, White
+        lda timer2
 endif
         cld             ; clear decimal mode
 
@@ -882,6 +864,9 @@ gFUCheckHi
         iny
         lda score1
         sta HISCORES,Y
+        iny
+        lda stageNumChar
+        sta HISCORES,Y
         mva #True, statsHiScore
         jmp gameFlowHiScoreDisplay
 
@@ -925,29 +910,6 @@ gameFlowHiScoreDisplay
         rts
 
 ;===============================================================================
-; Debug routine to display timer
-if SHOWTIMER = 1
-gameFlowTimeDisplay
-        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+3, #ScoreY, #$00, White
-        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+5, #ScoreY, time2, White
-        LIBSCREEN_DRAWDECIMAL_AAAV #HiScoreX+7, #ScoreY, time1, White
-        lda time2
-        rts
-endif
-;===============================================================================
-
-gameFlowFullAmmoDisplay
-        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX, #StatusY
-        LIBSCREEN_SETCHAR_V InfinityChar
-        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX, #StatusY
-        LIBSCREEN_SETCHAR_V Green
-        LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+1, #StatusY
-        LIBSCREEN_SETCHAR_V InfinityChar+1
-        LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+1, #StatusY
-        LIBSCREEN_SETCHAR_V Green
-        rts
-
-;===============================================================================
 
 gameFlowBulletDisplay
         LIBSCREEN_DRAWDECIMAL_AAAV #AmmoValX, #StatusY, bullets, White
@@ -962,7 +924,7 @@ gameFlowBulletDisplay
 gameFlowBombDisplay
         LIBSCREEN_DRAWDECIMAL_AAAV #AmmoValX+3, #StatusY, bombs, White
         LIBSCREEN_SETCOLORPOSITION_AA #AmmoValX+5, #StatusY
-        LIBSCREEN_SETCHAR_V BombColor
+        LIBSCREEN_SETCHAR_V MissileColor
         LIBSCREEN_SETCHARPOSITION_AA #AmmoValX+5, #StatusY
         LIBSCREEN_SETCHAR_V MissileUpChr
         rts

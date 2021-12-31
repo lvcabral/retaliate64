@@ -1,7 +1,7 @@
 ;===============================================================================
 ;  gameWaves.asm - Alien Waves data
 ;
-;  Copyright (C) 2018-2020 Marcelo Lv Cabral - <https://lvcabral.com>
+;  Copyright (C) 2018-2021 Marcelo Lv Cabral - <https://lvcabral.com>
 ;
 ;  Distributed under the MIT software license, see the accompanying
 ;  file LICENSE or https://opensource.org/licenses/MIT
@@ -21,12 +21,7 @@ AsteroidsWave2     = MaxWaves-1
 AliensXMoveMax     = 210
 OrbsXMoveMax       = 40
 
-if NUMOFWAVES = 0
-AliensStageWaves   = 6             ; Number of waves to change stages
-else
-AliensStageWaves   = NUMOFWAVES
-endif
-if NUMOFSTAGES = 0
+if NUMOFSTAGES < 2
 LastStageCnt       = 6             ; Number of stages per game
 else
 LastStageCnt       = NUMOFSTAGES
@@ -60,20 +55,20 @@ wavesBomberArray      byte $00, $07, $00, $00, $00, $00, $18, $00, $00, $11
 
 wavesAliensArray      byte SHO, PRB, PRB, PRB, PRB, SHO, PRB, PRB, MNE, PRB, PRB ; 00 - Invaders Wave
                       byte SHO, SHO, SHO, SHO, SHO, SHO, MNE, PRB, MNE, PRB, MNE ; 01 * All Shooters V
-                      byte MNE, MNE, MNE, MNE, MNE, MNE, PRB, PRB, ORB, PRB, PRB ; 02 - All Reds 1
-                      byte ORB, PRB, PRB, PRB, PRB, ORB, MNE, MNE, MNE, MNE, MNE ; 03 - Pyramid
-                      byte MNE, MNE, MNE, MNE, MNE, MNE, PRB, ORB, PRB, ORB, PRB ; 04 - All Reds 2
+                      byte MNE, ORB, MNE, MNE, ORB, MNE, PRB, PRB, ORB, PRB, PRB ; 02 - All Reds 1
+                      byte ORB, PRB, PRB, PRB, PRB, ORB, MNE, ORB, MNE, ORB, MNE ; 03 - Pyramid
+                      byte MNE, PRB, MNE, MNE, PRB, MNE, PRB, ORB, PRB, ORB, PRB ; 04 - All Reds 2
                       byte MNE, MNE, SHO, SHO, MNE, MNE, PRB, PRB, MNE, PRB, PRB ; 05 - Diamond
                       byte SHO, MNE, PRB, MNE, PRB, MNE, ORB, MNE, PRB, MNE, ORB ; 06 * Left Stair
                       byte PRB, MNE, PRB, MNE, PRB, SHO, MNE, ORB, MNE, ORB, MNE ; 07 - Right Stair
-                      byte MNE, MNE, MNE, MNE, MNE, MNE, ORB, ORB, SHO, ORB, ORB ; 08 - Pyramid with Shooter
-                      byte SHO, SHO, SHO, SHO, SHO, SHO, MNE, PRB, MNE, PRB, MNE ; 09 * All Shooters M
+                      byte MNE, PRB, MNE, MNE, PRB, MNE, ORB, ORB, SHO, ORB, ORB ; 08 - Pyramid with Shooter
+                      byte SHO, SHO, SHO, SHO, SHO, SHO, PRB, PRB, MNE, PRB, PRB ; 09 * All Shooters M
                       byte SHO, ORB, MNE, MNE, ORB, SHO, MNE, ORB, ORB, ORB, MNE ; 0A * Zig Zag
-                      byte MNE, PRB, MNE, MNE, PRB, MNE, PRB, SHO, SHO, SHO, PRB ; 0B * Three Shooters
+                      byte MNE, PRB, ORB, ORB, PRB, MNE, PRB, SHO, SHO, SHO, PRB ; 0B * Three Shooters
                       byte PRB, MNE, MNE, MNE, MNE, PRB, SHO, PRB, PRB, PRB, SHO ; 0C - Flat U
                       byte SHO, SHO, SHO, SHO, SHO, SHO, SHO, SHO, SHO, SHO, SHO ; 0D - Double Shooters
                       byte SHO, PRB, MNE, MNE, PRB, SHO, MNE, PRB, SHO, PRB, MNE ; 0E - Big V with Shooters
-                      byte MNE, MNE, MNE, MNE, MNE, MNE, PRB, PRB, SHO, PRB, PRB ; 0F * Wave with shooter (hard)
+                      byte MNE, PRB, MNE, MNE, PRB, MNE, PRB, PRB, SHO, PRB, PRB ; 0F * Wave with shooter (hard)
                       byte MNE, ORB, PRB, MNE, ORB, PRB, MNE, ORB, PRB, MNE, MNE ; A1 - Asteroids Field 1
                       byte ORB, MNE, ORB, ORB, ORB, ORB, MNE, ORB, MNE, ORB, MNE ; A2 - Asteroids Field 2
                       ;     0    1    2    3    4    5    6    7    8    9    A
@@ -218,10 +213,12 @@ wavesRndTable         byte $0F,$0C,$06,$00,$0B,$07,$04,$08,$01,$03,$02,$09,$0D,$
                       byte $03,$11,$01,$10,$00,$08,$07,$0E,$06,$05,$0B,$04,$0F,$02,$09,$0A
                       byte $08,$0C,$0B,$0F,$05,$03,$07,$11,$06,$04,$10,$00,$0A,$01,$02,$09
 
-stagesOffsetArray     byte   0,   3,   6,   9
+stagesWavesArray      byte   3,   4,   5,   6
 
-stagesLevelArray      byte   0,   0,   0,   1,   1,   1,   2,   2,   2
-                      byte   3,   3,   3,   3,   3,   3,   3
+stagesOffsetArray     byte   0,   5,  10,  13
+
+stagesLevelArray      byte   0,   0,   0,   0,   0,   1,   1,   1,   1,   1
+                      byte   2,   2,   2,   2,   2,   3,   3,   3,   3,   3
 
 stagesShooterStart    byte AlienSquid,   AlienSquid,   AlienSquid,   AlienSquid,   AlienSquid,   AlienSquid,   AlienSquid
 stagesShooterEnd      byte AlienSquid+3, AlienSquid+3, AlienSquid+3, AlienSquid+3, AlienSquid+3, AlienSquid+3, AlienSquid+3
@@ -259,20 +256,20 @@ aliensXMoveArray      byte    1,  1,  1,  1,  1,  1,  1,  1,  1,  1     ;right
                       byte    0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 
 
-orbsXMoveArray        byte    1,  1,  1,  1,  1,  1,  1,  1,  1,  1     ;right
-                      byte    1,  1,  1,  1,  1,  1,  1,  1,  1,  1
-                      byte   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1     ;left
-                      byte   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+orbsXMoveArray        byte    1,  1,  1,  1,  2,  2,  2,  2,  2,  2    ;right
+                      byte   -2, -2, -2, -2, -2, -2, -1, -1, -1, -1
+                      byte   -1, -1, -1, -1, -2, -2, -2, -2, -2, -2    ;left
+                      byte    2,  2,  2,  2,  2,  2,  1,  1,  1,  1
 
-ntscSpeedEasy         byte   0, 2, 0, 2, 0, 2, 0, 2, 0, 2
+ntscSpeedSlow         byte   0, 2, 0, 2, 0, 2, 0, 2, 0, 2
 ntscSpeedNormal       byte   0, 3, 0, 3, 0, 3, 0, 3, 0, 3
-ntscSpeedHard         byte   0, 4, 0, 4, 0, 4, 0, 4, 0, 4
-ntscSpeedExtreme      byte   0, 5, 0, 5, 0, 5, 0, 5, 0, 5
+ntscSpeedFast         byte   0, 4, 0, 4, 0, 4, 0, 4, 0, 4
+ntscSpeedWarp         byte   0, 5, 0, 5, 0, 5, 0, 5, 0, 5
 
-palSpeedEasy          byte   0, 2, 0, 3, 0, 2, 0, 3, 0, 2
+palSpeedSlow          byte   0, 2, 0, 3, 0, 2, 0, 3, 0, 2
 palSpeedNormal        byte   0, 3, 0, 4, 0, 3, 0, 4, 0, 4
-palSpeedHard          byte   0, 4, 0, 5, 0, 5, 0, 5, 0, 5
-palSpeedExtreme       byte   0, 6, 0, 6, 0, 6, 0, 6, 0, 6
+palSpeedFast          byte   0, 4, 0, 5, 0, 5, 0, 5, 0, 5
+palSpeedWarp          byte   0, 6, 0, 6, 0, 6, 0, 6, 0, 6
 
 aliensFirePattern     byte  13,  13,  91,  91,  13,  13,  13,  91, 177, 177
                       byte  13,  13,  13,  13,  91, 177,  91,  91,  91, 177

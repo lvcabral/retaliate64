@@ -1,104 +1,104 @@
-# Retaliate for the Commodore 64
+# Retaliate for the Commodore 64 (Community Edition)
 Project to remake, using 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
 
-### Spring Update: 28-May-2019
-I's official! [RGCD](http://www.rgcd.co.uk) announced, a couple of weeks ago, the physical release of **Retaliate DX** in cartridge, that will be available soon! Stay tuned because as soon as the DX version is availale, I will upload to this repository the CE (Community Edition) that will have the same code, but with my original sprites and SFX. To know more about the DX release click on the amazing opening screen, made by Jon Eggelton!
-
-[![Retaliate DX](https://4.bp.blogspot.com/-iy5HdunYrIY/XN223l6rTnI/AAAAAAAANVM/r6uqa9rPjUUV6snKgu9eWMAPw7vZkhgIACLcBGAs/s480/retal1.png)](https://www.rgcd.co.uk/2019/05/retaliate-dx-commodore-64.html)
-
 ## Introduction
-After developing remakes of classic 8bit games (Prince of Persia, Lode Runner, Donkey Kong, Moon Patrol) to the Roku platform (streaming box/TV OS)
-I decided to work the other way around, this time, developing for the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64) a version of one of the most successful games for Roku, the arcade-style 
-space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate).
 
-![Retaliate Screens](http://lvcabral.com/images/C64/retaliate03-500x420.gif)
+After developing remakes of classic 8-bit games (see links below on this document) to the [Roku platform](https://developer.roku.com/docs/features/features-overview.md) (streaming box/TV OS) I decided to work the other way around, this time, developing for the [Commodore 64 computer](https://en.wikipedia.org/wiki/Commodore_64) a version of one of the most successful games for Roku, the arcade-style space shooter [Retaliate](https://channelstore.roku.com/details/53540/retaliate). Originally created by [Romans I XVI Gaming](https://www.romansixvigaming.com/), **Retaliate** has a unique concept, unlike the classic shooters (Space Invaders, Galaxian, Galaga) where you have infinity shooting power, here you start with no ammunition at all! However you have energy stored for a shield that, when is activated, not only can destroy the enemies but most importantly collect their ammo so you are able to RETALIATE!
 
-### Game Concept
-Originally created by [Romans I XVI](https://www.romansixvigaming.com/) Retaliate has a unique concept, unlike the classic shooters (Space Invaders, Galaxian, Galaga)
-where you have infinity ammunition, here you start with no bullets at all! However you have energy stored for a shield that, 
-when is activated, not only can destroy the aliens but most importantly collect their bullets so you are able to RETALIATE!
+## Project Information
 
-### About the Project
-I started studying 6502 assembly to work on [my port of Prince of Persia](https://github.com/lvcabral/Prince-of-Persia-Roku), but at that time, the focus was just to understand 
-pieces of the logic. As I own a Commodore 64 since 2015, I wanted to start a project for it, but always found too complex to start 
-from scratch.
+- If you want to know more about the development of this game please take a look at the [project timeline](./docs/project.md) page.
+- To see the memory map of the game check the [repository wiki](./wiki/Memory-Map) page.
+- Open the [Changelog](./CHANGELOG.md) to check the history of the source code implementation.
 
-This changed when I came across the book called "[Retro Game Dev - C64 Edition](http://amzn.to/2Dbftp7)" by Derek Morris, with his simple approach, I got the motivation 
-and some code to start with, along with the right tools to simplify the work (a development IDE and ready made libraries).
+## Game Editions Comparison
 
-The game code on this project is a learning exercise, that was implemented upon Derek's mini-shooter-game example from 
-the book (shared with no licensing restrictions). So, be aware that this is my first attempt on creating a game 
-for the Commodore 64, and still is an ongoing project, this way, as I learn more, new features will be implemented.
-If you found bugs or have any suggestions please go on and report those at the [Issues Backlog](https://github.com/lvcabral/retaliate64/issues), 
-and If you also want to collaborate with the game, fork the project and send your pull requests!
+The source code on this repository contains the **Community Edition** of the game, that has the same game engine code as the [DX edition of the game](https://lvcabral.itch.io/retaliate-dx), but with some limitations, take a look on the table below to see what are the main differences between the two editions.
 
-I'm also adding techincal documentation (memory map etc.) on the [Wiki page of the project](https://github.com/lvcabral/retaliate64/wiki).
+<a href="https://www.youtube.com/watch?feature=player_embedded&v=Jgf1SbaIOfw" target="_blank"><img src="https://img.youtube.com/vi/Jgf1SbaIOfw/0.jpg"
+alt="Retaliate DX" width="240" height="180" border="2" align="right" /></a>
 
-#### New Year's Update: 31-December-2018
-As I predicted, it took me a few months (nights and weekends) to study and be able to implement the new features I planned for the game. I managed to incorporate a multiplex/sort routine that allowed increase the number of sprites on the screen, increasing the number of alien enemies and making the usability closer to the original game. I also added the destroyer alien (from the Android version) and a new concept of an Asteroid Field, as a tribute to the classic Arcade game, in order to explode an asteroid you need to hit it 3 times with a bullet (and it decreases in size) or hit with a missle collected from the destroyer. The game now is also translated to Portuguese (my native language) and Spanish.
+| Feature            | Retaliate CE    | Retaliate DX         |
+| -------------------|:---------------:|:--------------------:|
+| Skill Levels       | 4               | 4                    |
+| Stages per Level   | 7               | 7 + Ending Scene     |
+| Player Ship Models | 1 + 4 to unlock | 1 + 4 to unlock      |
+| Double cannons     | N/A             | 2 models             |         
+| Enemy Ship Models  | 6               | 10                   |
+| Enemy Formations   | 18              | 36                   |
+| Intro Screen       | Simple          | Enhanced by Jon Eggleton |
+| UI and Sprites     | Simple          | Enhanced by [@smilastorey](https://twitter.com/smila007) |
+| Sound Effects      | Simple          | Enhanced by [TND](http://www.tnd64.unikat.sk/)|
+| Game Music         | Main Theme      | Menu and Main Theme by [TND](http://www.tnd64.unikat.sk/)|
+| Sound Effects      | Simple          | Enhanced by [TND](http://www.tnd64.unikat.sk/)|
+| Localization       | en-us           | en-us, pt-br, es-es  |
+| Game Control       | Joystick        | Joystick and [SNES Controller](https://texelec.com/product/snes-adapter-commodore/)|
+| Easter Egg Mode    | N/A             | Unlock with joystick |
+| Assembly code      | CBM .prg Studio | KickAssembler        |
 
-Now, exactly one year after this repository was launched, I'm happy to announce that I partnered with [RGCD](http://www.rgcd.co.uk) to make a physical release of Retaliate for Commodore 64!
-
-We managed to have great people involved including [Richard Bayliss](http://tnd64.unikat.sk/) (music) and [Trevor Storey](http://smilastorey.wixsite.com/trevor-storey) (graphics). The "community edition" source-code will be released here, the same day the physical release, the only difference will be the graphics, for the community edition I will keep my own sprites, but the implementation of all new features will be available here, including some intermediate releases, so you can see the progress I made during 2018. 
-
-Check the teaser video below for a quick preview!
-
-[![Release Teaser](https://lvcabral.com/images/c64/youtube-player.jpg)](https://www.youtube.com/watch?v=rxUQ07g1_1w)
-
-
-### Features
-My main goal is to implement the functionality to reproduce (as much as possible) the original game mechanics and graphics. 
-You can see below a comparison of the ship sprites I created, based on the original Roku game.
-
-![Player Ship Models](http://lvcabral.com/images/C64/retaliate-ships-comparison.png)
-
-The current release (v0.3) is the last public Beta version and it brings a SID music during the game play, bug fixes, additional screen and settings.
-
-Open the [Changelog](https://github.com/lvcabral/retaliate64/blob/master/CHANGELOG.md) to check all the currently implemented features.
+If you learned from this project and want to motivate me to develop more cool stuf, head to my store and purchase [Retaliate DX](https://lvcabral.itch.io/retaliate-dx). I can guarantee you will enjoy a lot the additional features!
 
 ## How to Play the Game
+
 You can run the game on a real Commodore 64/128 or using an emulator, below the two methods:
 
 ### Using a Commodore 64/128 with Floppy Disk or SD Card
 
-1.	Download the latest D64 file from the [release page](https://github.com/lvcabral/retaliate64/releases)
-2.	Save it into the media you need (floppy disk or SD Card) 
+1.	Download the latest **D64 file** from the [release page](https://github.com/lvcabral/retaliate64/releases)
+2.	Save it into the media you normally use (floppy disk or SD Card) 
 3.	Mount the media and turn on your computer
 4.  Execute: LOAD "RETALIATE",8,1
 5.	Execute: RUN
 
 ### Using a Commodore 64 Emulator
 
-1.	Download the latest D64 file from the [release page](https://github.com/lvcabral/retaliate64/releases)
-2.	Open VICE x64 emulator
+1.	Download the latest **D64 file** from the [release page](https://github.com/lvcabral/retaliate64/releases)
+2.	Open [VICE x64 emulator (3.1 or newer)](http://vice-emu.sourceforge.net/)
 3.	Click on menu option File->Autostart disk/tape image... 
 4.  Select the D64 file
 
-## Build and Test
+## How to Build and Run the Code (Windows only)
 
-1.	Download the repository
-2.	Download and install VICE Emulator
-3.	Download and install CBM .prg Studio (v3.12 or newer)
-4.	Open CBM .prg Studio and configure VICE location
+1.	Clone or download this Git repository
+2.	Download and install [VICE Emulator](http://vice-emu.sourceforge.net/)
+3.	Download and install CBM .prg Studio (v3.14 or newer)
+4.	Open [CBM .prg Studio](http://www.ajordison.co.uk/) and configure VICE location
 5.	Open project file retaliate.cbmprj
 6.	Press CTRL+F5 (build project and execute)
 
-![Retaliate Gameplay](http://lvcabral.com/images/C64/retaliate64-beta-gameplay-300px.gif)
+## How to Build a Disk Image (Windows only)
+
+Using [CBM .prg Studio](http://www.ajordison.co.uk/) execute the tasks:
+1.	Open buildGame.asm
+2.  Press CTRL+F6 (builds retaliate-ce.prg to "out" folder)
+3.  Open buildLoader.asm
+4.  Press F6 (builds retaliate.prg to "out" folder)
+5.  Open buildDataFile.asm
+6.  Press F6 (builds retdata.prg to "out" folder)
+7.  Select "Open Command Line" from the Project menu
+8.  Type "cd .." and ENTER to go to repository's root
+9.  Execute "diskbuild.bat" (builds retaliate-ce.d64 to "release" folder)
 
 ## Resources Used
-These are the books, music, tools and websites that are helping me to develop this project:
+
+These are some of the books, tools and websites that helped me to develop this project:
 
 - [Retro Game Dev: Book by Derek Morris](https://www.retrogamedev.com/)
 - [Romans I XVI Gaming: Original game developer](https://www.romansixvigaming.com/)
 - [Retaliate for Roku: Open Source Repo](https://github.com/Romans-I-XVI/Roku-Retaliate-Channel-Open-Source)
-- [Music "Scout" by Jeroen Tel](http://csdb.dk/sid/?id=28205)
-- [VICE: Versatile Commodore Emulator](http://vice-emu.sourceforge.net/)
 - [CBM .prg Studio: IDE by Arthur Jordison](http://www.ajordison.co.uk/)
+- [VICE: Versatile Commodore Emulator](http://vice-emu.sourceforge.net/)
+- [exomizer 3 by Magnus Lind](https://bitbucket.org/magli143/exomizer/wiki/Home)
+- [mkd64 by Zirias](https://github.com/Zirias/c64_tool_mkd64)
+- [Pixcen by John Hammarberg](https://github.com/Hammarberg/pixcen)
 - [Project One: Graphic editor by Resource](http://p1.untergrund.net/)
+- [The New Dimention by Richard Bayliss](http://tnd64.unikat.sk/)
 - [Codebase64: C64 Programming Wiki](http://codebase64.org/)
 - [6502.org: The microprocessor resource](http://www.6502.org)
 - [Dustlayer: Blog with C64 Tutorials by @actraiser](http://dustlayer.com/)
 - [Commodore 64 Resources by Peter Kofler](http://kofler.dot.at/c64/)
+- [Mapping the Commodore 64](https://archive.org/stream/Compute_s_Mapping_the_Commodore_64)
+- [Machine Language for the C64 by Jim Butterfield](https://archive.org/details/Machine_Language_for_the_Commodore_Revised_and_Expanded_Edition)
 
 ## My Other Retro Game Ports/Remakes
 
@@ -108,6 +108,7 @@ These are the books, music, tools and websites that are helping me to develop th
 - Moon Patrol for Roku: [Video](https://www.youtube.com/watch?v=JNLBkOXiTQU) - [Repo](https://github.com/lvcabral/Moon-Patrol-Roku)
 
 ## My Other Links
+
 - My website is [https://lvcabral.com](https://lvcabral.com)
 - My twitter is [@lvcabral](https://twitter.com/lvcabral)
 - My podcast is [PODebug Podcast](http://podebug.com)
@@ -115,7 +116,6 @@ These are the books, music, tools and websites that are helping me to develop th
 
 ## Project License
 
-Copyright (C) Marcelo Lv Cabral. All rights reserved.
+Copyright (C) 2017-2022 Marcelo Lv Cabral. All rights reserved.
 
 Licensed under [MIT](https://github.com/lvcabral/retaliate64/blob/master/LICENSE) License.
-
