@@ -438,6 +438,9 @@ gPUFFire
 gamePlayerUpdateLaunch
         LIBINPUT_GETHELD GameportUpMask
         beq gPULCheckBombs
+
+        LIBINPUT_GETFIRE3
+        beq gPULCheckBombs
         rts
 
 gPULCheckBombs
@@ -498,8 +501,14 @@ gPUPDown
         LIBMATH_ADD8BIT_AAA playerFrame, playerDirection, ZeroPageTemp
         LIBMPLEX_SETFRAME_AA playerSprite, ZeroPageTemp
 
+        LIBINPUT_GETFIRE2
+        beq gPrePUPNoShield ;fire2 pressed, continue shield
+
         LIBINPUT_GETHELD GameportDownMask
-        bne gPUPNoShield ;down not pressed, disable shield
+        beq gPrePUPNoShield ;down pressed, continue shield
+        jmp gPUPNoShield ;fire2 or down not pressed, disable shield
+
+gPrePUPNoShield
         lda shieldEnergy
         beq gPUPNoShield ;no energy, disable shield
         lda shieldActive
@@ -554,6 +563,9 @@ gPUPSetNewPos
 
 gamePlayerUpdateShieldEnergy
         LIBINPUT_GETHELD GameportDownMask
+        beq gPISEConsumeEnergy
+
+        LIBINPUT_GETFIRE2
         beq gPISEConsumeEnergy
 
 gPISERecoverEnergy        
