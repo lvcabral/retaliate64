@@ -51,9 +51,50 @@ gameportDiff            byte 0
 fireDelay               byte 0
 fireBlip                byte 1 ; reversed logic to match other input
 keyDown                 byte 0
+tempbuffer              byte 0
+fire2                   byte 0
+fire3                   byte 0
 
 ;===============================================================================
 ; Macros/Subroutines
+
+defm    LIBINPUT_GETFIRE2
+        SEI ;disable interrupts
+        STA tempbuffer ;SAVE IT AWAY
+        LDA #$C0 ;
+        STA $DC02 ;SET PORT A FOR INPUT
+        LDA $DC00 ;Control-Port 1 selected (when bit6=1 and bit7=0)
+        and #%00111111 ;clear bit-6/7
+        ora #%10000000 ;set bit-6
+        sta $DC00 ;now control-port 1 is selected for reading the POT registers
+        lda $D419
+        sta fire2
+        LDA tempbuffer ;
+        STA $DC02 ;RESTORE PREVIOUS VALUE OF DDR
+        CLI ;restore interrupts
+        
+        lda fire2
+        ;and #$01
+        endm ; test with bne on return
+
+defm    LIBINPUT_GETFIRE3
+        SEI ;disable interrupts
+        STA tempbuffer ;SAVE IT AWAY
+        LDA #$C0 ;
+        STA $DC02 ;SET PORT A FOR INPUT
+        LDA $DC00 ;Control-Port 1 selected (when bit6=1 and bit7=0)
+        and #%00111111 ;clear bit-6/7
+        ora #%10000000 ;set bit-6
+        sta $DC00 ;now control-port 1 is selected for reading the POT registers
+        lda $D41A
+        sta fire3
+        LDA tempbuffer ;
+        STA $DC02 ;RESTORE PREVIOUS VALUE OF DDR
+        CLI ;restore interrupts
+        
+        lda fire3
+        ;and #$01
+        endm ; test with bne on return
 
 defm    LIBINPUT_GETHELD ; (buttonMask)
 
