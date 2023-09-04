@@ -1,5 +1,5 @@
 # Retaliate for the Commodore 64 (Community Edition)
-Project to remake, using 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
+Project to remake, in 6502 Assembly, the space shooter game Retaliate (Roku & Android) for the Commodore 64
 
 ## Introduction
 
@@ -8,7 +8,7 @@ After developing remakes of classic 8-bit games (see links below on this documen
 ## Project Information
 
 - If you want to know more about the development of this game please take a look at the [project timeline](./docs/project.md) page.
-- To see the memory map of the game check the [repository wiki](./wiki/Memory-Map) page.
+- To see the memory map of the game check the [repository wiki](https://github.com/lvcabral/retaliate64/wiki/Memory-Map) page.
 - Open the [Changelog](./CHANGELOG.md) to check the history of the source code implementation.
 
 ## Game Editions Comparison
