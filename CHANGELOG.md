@@ -46,7 +46,7 @@
 - Each player ship model now has different features:
     - Lateral Speed: First two ships are normal, the other three are fast
     - Stable Shield: Sturdy Striker and Ruthless Retaliator are stable, shield don't increase speed during the game
-    - # of Waves in Full Ammo: First three ships it lasts only 2 waves, the other two models the shield lasts 3 waves
+    - The # of Waves in Full Ammo: First three ships it lasts only 2 waves, the other two models the shield lasts 3 waves
 - Reduced player ship hitbox for sprites and bullets when shield is down
 - Shield recovery speed is now faster than consumption (similar to original game)
 - Player ship fly from below the screen on start of stage
